@@ -1,0 +1,46 @@
+[project]
+name = "csf-dynamics"
+version = "0.1.0"
+description = "ID-only CSF selection: training-dynamics pilot on Imagenette"
+readme = "README.md"
+requires-python = "==3.12.*"
+# GPU runs use the x9 container on the HPC (Python 3.12, torch 2.6.0+cu124,
+# torchvision 0.21.0+cu124; Systematic_OOD/container/x9). The lower bounds below are
+# the ones of that container, and uv.lock records the exact local versions.
+# The x9 container has no torch-pca and no torchmetrics. The paper's CSF classes
+# import both, so the HPC adds them from requirements-hpc.txt.
+dependencies = [
+    "matplotlib>=3.8",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pillow>=10",
+    "scikit-learn>=1.4",
+    "scipy>=1.11",
+    "torch==2.6.0",
+    "torch-pca==1.1.0",
+    "torchmetrics==1.9.0",
+    "torchvision==0.21.0",
+    "tqdm>=4.66",
+]
+
+[dependency-groups]
+dev = ["mypy", "pytest==9.1.1", "ruff"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+extend-exclude = ["external"]
+
+[tool.ruff.lint.per-file-ignores]
+"dynamics/*.py" = ["E402"]
+
+[tool.mypy]
+ignore_missing_imports = true
+follow_imports = "skip"
+exclude = ["external/"]

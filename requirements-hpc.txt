@@ -1,0 +1,7 @@
+# Packages that the paper's CSF classes import and the x9 container lacks.
+# Install them next to the container, without their dependencies, so that pip
+# does not touch the container's torch:
+#   python -m pip install --no-deps --target "$DYN_ENV" -r requirements-hpc.txt
+torch-pca==1.1.0
+torchmetrics==1.9.0
+lightning-utilities==0.15.3
