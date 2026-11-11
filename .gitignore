@@ -8,7 +8,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-
+runs/
+data/
 # Run logs and copied results
 dyn_*.log
 dyn_results/
