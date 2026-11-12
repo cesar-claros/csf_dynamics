@@ -32,6 +32,10 @@ LOGIT_ONLY = ("MSR", "MLS", "Energy", "GEN", "REN", "PCE", "GE", "PE")
 FEATURE_CSFS = ("GradNorm", "pNML", "CTM", "fDBD", "NNGuide", "NeCo", "Maha",
                 "MahaPP", "NCI", "ViM", "Residual", "PCA_RecError", "KPCA_RecError")
 PAPER_CSFS = (*LOGIT_ONLY, *FEATURE_CSFS)
+#: Paper CSFs that read only the features, so they can run on any layer.
+HEAD_FREE = ("Maha", "MahaPP", "PCA_RecError")
+#: Rows per call of the Mahalanobis scoring, which builds an (n, d, classes) tensor.
+MAHA_CHUNK = 8192
 
 
 def _last_layer(module, study_name, return_model=True):
@@ -92,9 +96,9 @@ def _module(w: torch.Tensor, b: torch.Tensor) -> SimpleNamespace:
 def paper_scores(train: torch.Tensor, labels: torch.Tensor,
                  logits_train: torch.Tensor, w: torch.Tensor, b: torch.Tensor,
                  evaluation: torch.Tensor, logits: torch.Tensor, n_classes: int,
-                 precision: str = "float64"
+                 precision: str = "float64", names: tuple[str, ...] = PAPER_CSFS
                  ) -> tuple[dict[str, np.ndarray], dict[str, str]]:
-    """The 21 CSFs of the paper code that need no gradient training.
+    """The 21 CSFs of the paper code that need no gradient training, or some of them.
 
     A higher score means more confidence, as in the paper pipeline. The logit-only
     scores use float64, so that a saturated softmax does not create ties. The
@@ -161,7 +165,8 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
     def fit_maha(cls):
         maha = cls(cf)
         maha.compute_MahaDist_params(train, labels)
-        return maha.get_scores(evaluation)
+        return torch.cat([maha.get_scores(part)
+                          for part in evaluation.split(MAHA_CHUNK)])
 
     def fit_nci():
         nci = NCI(module, STUDY, cf)
@@ -221,7 +226,7 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
     previous = torch.get_default_dtype()
     torch.set_default_dtype(dtype)  # the paper classes create tensors of this type
     try:
-        for name in PAPER_CSFS:
+        for name in names:
             torch.manual_seed(0)
             np.random.seed(0)
             try:
@@ -234,6 +239,23 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
     finally:
         torch.set_default_dtype(previous)
     return scores, errors
+
+
+def head_free_scores(train: torch.Tensor, labels: torch.Tensor,
+                     evaluation: torch.Tensor, n_classes: int,
+                     precision: str = "float64"
+                     ) -> tuple[dict[str, np.ndarray], dict[str, str]]:
+    """The paper CSFs of `HEAD_FREE` on the features of any layer.
+
+    These CSFs do not read the head. The PCA class still asks for one when it is
+    built, so it gets a head of zeros.
+    """
+    width = train.shape[1]
+    zeros = torch.zeros(n_classes, width)
+    return paper_scores(train, labels, torch.zeros(len(train), n_classes), zeros,
+                        torch.zeros(n_classes), evaluation,
+                        torch.zeros(len(evaluation), n_classes), n_classes,
+                        precision, HEAD_FREE)
 
 
 def paper_nc(train: torch.Tensor, labels: torch.Tensor, w: torch.Tensor,

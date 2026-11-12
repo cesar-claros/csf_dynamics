@@ -448,6 +448,27 @@ def out_of_run_r2(x: np.ndarray, y: np.ndarray, groups: np.ndarray,
     return float(1 - ((y - predicted) ** 2).sum() / ((y - y.mean()) ** 2).sum())
 
 
+def epoch_mean_r2(cells: pd.DataFrame, target: np.ndarray, by: list[str]) -> float:
+    """Out-of-run R2 of the strict clock.
+
+    Each cell is predicted by the mean of the other runs that share its values of
+    `by`, for example the regime and the epoch. This is the best that a rule can do
+    if it knows only the recipe and the time. Cells without such a partner are left
+    out. NaN if fewer than two cells remain or the target is constant.
+    """
+    frame = cells[by].reset_index(drop=True)
+    frame["y"] = np.asarray(target, dtype=np.float64)
+    group = frame.groupby(by)["y"]
+    count = group.transform("count")
+    predicted = (group.transform("sum") - frame["y"]) / (count - 1).where(count > 1)
+    keep = (count > 1).to_numpy()
+    y = frame.loc[keep, "y"].to_numpy()
+    if len(y) < 2 or np.ptp(y) == 0:
+        return float("nan")
+    residual = y - predicted[keep].to_numpy()
+    return float(1 - (residual ** 2).sum() / ((y - y.mean()) ** 2).sum())
+
+
 def dummies(values: pd.Series) -> np.ndarray:
     return pd.get_dummies(values, drop_first=True).to_numpy(dtype=np.float64)
 
@@ -487,9 +508,13 @@ def link_two(points: pd.DataFrame, placement: pd.DataFrame, clock: pd.DataFrame,
         keep = everywhere if csf in NO_FIT_CSFS else late
         share = (cells[csf].to_numpy()[keep] / 100).clip(1e-3, 1 - 1e-3)
         target = np.log(share / (1 - share))
+        strict = epoch_mean_r2(cells[keep], target, ["recipe", "epoch", "set"])
+        fits = {name: out_of_run_r2(design[keep], target, groups[keep])
+                for name, design in designs.items()}
         rows.append({"csf": csf, "group": CSF_GROUP.get(csf), "cells": int(keep.sum()),
-                     **{name: out_of_run_r2(design[keep], target, groups[keep])
-                        for name, design in designs.items()}})
+                     "base": fits["base"], "clock": fits["clock"],
+                     "epoch_mean": strict, "placement": fits["placement"],
+                     "both": fits["both"]})
     return pd.DataFrame(rows)
 
 
@@ -525,10 +550,13 @@ def link_one(descriptors: pd.DataFrame, placement: pd.DataFrame,
         for target in targets.columns:
             values = cells[target].to_numpy(dtype=np.float64)
             keep = np.isfinite(values)
+            fits = {key: out_of_run_r2(design[keep], values[keep], groups[keep])
+                    for key, design in designs.items()}
             rows.append({"set": name, "placement": target, "cells": int(keep.sum()),
-                         **{key: out_of_run_r2(design[keep], values[keep],
-                                               groups[keep])
-                            for key, design in designs.items()}})
+                         "clock": fits["clock"],
+                         "epoch_mean": epoch_mean_r2(cells[keep], values[keep],
+                                                     ["recipe", "epoch"]),
+                         "geometry": fits["geometry"], "both": fits["both"]})
     return pd.DataFrame(rows)
 
 
@@ -647,7 +675,7 @@ def main() -> None:
     threshold = MATERIALITY
     if not noise_last.empty and np.isfinite(noise_last["gap_sd"]).any():
         threshold = max(MATERIALITY, 2 * float(noise_last["gap_sd"].max()))
-    models = ["base", "clock", "placement", "both"]
+    models = ["base", "clock", "epoch_mean", "placement", "both"]
     link_two_summary = (second.groupby("group")[models].median().reset_index()
                         if not second.empty else second)
     regime_summary = summary(regime, ["group"],
@@ -703,11 +731,18 @@ def main() -> None:
         ("E3: placement to ranking",
          "Out-of-run R2 of the logit of each CSF's AUROC. All models read the set "
          "and the regime. A no-fit CSF uses every cell, and a fitted CSF uses only "
-         "the converged cells. Median over the CSFs of each group:\n\n"
+         "the converged cells. `clock` is a linear model of the clock group. "
+         "`epoch_mean` is the strict clock: each run is predicted by the mean of the "
+         "other runs of the same regime at the same epoch and set. Median over the "
+         "CSFs of each group:\n\n"
          + block(link_two_summary) + f"\n\nPer CSF: `{out_dir.name}/e3_link_two.csv`."),
         ("E4: ID-only descriptors to placement",
-         "Out-of-run R2 of each placement descriptor of an external set, from the "
-         "clock group, from the geometric ID-only descriptors, and from both:\n\n"
+         "Out-of-run R2 of each placement descriptor of an external set, from a "
+         "linear model of the clock group (`clock`), from the strict clock "
+         "(`epoch_mean`, the mean of the other runs of the same regime at the same "
+         "epoch), from the geometric ID-only descriptors, and from both. The "
+         "geometric descriptors carry information beyond the time only if they beat "
+         "`epoch_mean`:\n\n"
          + block(first)),
         ("E5: stand-ins",
          "Spearman correlation between the CSF ranking on the stand-in and on the "

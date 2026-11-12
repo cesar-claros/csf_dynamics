@@ -5,7 +5,13 @@ import numpy as np
 import torch
 
 from dynamics.config import NEIGHBORS
-from dynamics.paper_api import LOGIT_ONLY, PAPER_CSFS, paper_scores
+from dynamics.paper_api import (
+    HEAD_FREE,
+    LOGIT_ONLY,
+    PAPER_CSFS,
+    head_free_scores,
+    paper_scores,
+)
 
 EXTRA_CSFS = ("kNN", "FeatureNorm")
 ALL_CSFS = (*PAPER_CSFS, *EXTRA_CSFS)
@@ -23,6 +29,8 @@ CSF_GROUPS: dict[str, tuple[str, ...]] = {
 }
 CSF_GROUP = {csf: group for group, names in CSF_GROUPS.items() for csf in names}
 NO_FIT_CSFS = CSF_GROUPS["no_fit"]
+#: CSFs that read only the features of one layer, so they can score any layer.
+LAYER_CSFS = (*HEAD_FREE, *EXTRA_CSFS)
 
 
 def knn_distance(reference: torch.Tensor, queries: torch.Tensor,
@@ -79,5 +87,15 @@ def all_scores(train: torch.Tensor, labels: torch.Tensor, logits_train: torch.Te
     """
     scores, errors = paper_scores(train, labels, logits_train, w, b, evaluation,
                                   logits, n_classes, precision)
+    scores.update(extra_scores(train, evaluation, device))
+    return scores, errors
+
+
+def layer_scores(train: torch.Tensor, labels: torch.Tensor, evaluation: torch.Tensor,
+                 n_classes: int, device: torch.device | None = None,
+                 precision: str = "float64"
+                 ) -> tuple[dict[str, np.ndarray], dict[str, str]]:
+    """Scores of the CSFs of `LAYER_CSFS` on the features of one layer."""
+    scores, errors = head_free_scores(train, labels, evaluation, n_classes, precision)
     scores.update(extra_scores(train, evaluation, device))
     return scores, errors

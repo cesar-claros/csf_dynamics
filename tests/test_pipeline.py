@@ -5,7 +5,7 @@ import json
 import pytest
 import torch
 
-from dynamics import analyze_e, run_stage, train
+from dynamics import analyze_e, analyze_step0, run_stage, train
 from dynamics.config import RunSpec
 from dynamics.scores import ALL_CSFS
 
@@ -27,6 +27,10 @@ def pipeline(tiny_data, tmp_path_factory):
     stage("--only", "B_seed0", "A_seed0_hold1")
     stage("--only", "B_seed0", "A_seed0_hold1", "--recheck")
     stage("--only", "B_seed0", "--skip-train", "--precision", "float32")
+    extra = tiny_data.imagenette.parent / "openood"
+    stage("--only", "B_seed0", "--skip-train", "--suite", "step0", "--extra-limit",
+          "20", "--extra-set", f"places={extra / 'places'}", "--extra-set",
+          f"ssb_hard={extra / 'ssb_hard'}")
     return root, stage
 
 
@@ -73,6 +77,31 @@ def test_each_precision_writes_to_its_own_folder(out_root, tmp_path, monkeypatch
                                      "--precision", "float32", "--out", str(report)])
     analyze_e.main()
     assert "Precision of the fitted CSFs: float32" in report.read_text()
+
+
+def test_suite_adds_sets_and_keeps_the_base_results(out_root, tmp_path, monkeypatch):
+    folder = out_root / "runs" / "B_seed0"
+    base = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
+    suite = json.loads((folder / "results_f64_step0" / "epoch_001.json").read_text())
+    assert suite["counts"]["places"] == 20 and suite["counts"]["ssb_hard"] == 18
+    assert suite["errors"] == {} and suite["layer_errors"] == {}
+    key = ("textures", "Maha")
+    first = {(row["set"], row["csf"]): row["auroc"] for row in base["metrics"]}
+    second = {(row["set"], row["csf"]): row["auroc"] for row in suite["metrics"]}
+    assert set(first) < set(second) and ("places", "kNN") in second
+    assert all(first[cell] == second[cell] for cell in first), key
+    assert {row["layer"] for row in suite["layer_metrics"]} == {
+        "stage1", "stage2", "stage3"}
+    report = tmp_path / "step0.md"
+    monkeypatch.setattr("sys.argv", ["analyze_step0", "--results-root",
+                                     str(out_root), "--out", str(report)])
+    analyze_step0.main()
+    assert "Rule 1: not decided" in report.read_text()
+
+
+def test_extra_sets_need_a_suite_name(pipeline):
+    with pytest.raises(SystemExit):
+        pipeline[1]("--only", "B_seed0", "--skip-train", "--extra-set", "places=/tmp")
 
 
 def test_a_complete_run_is_skipped(pipeline, capsys):

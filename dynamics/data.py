@@ -13,7 +13,14 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
-from dynamics.config import BLEND_SEED, GRID, RRC_SCALE, SHUFFLE_SEED, DataPaths
+from dynamics.config import (
+    BLEND_SEED,
+    GRID,
+    RESERVED_SETS,
+    RRC_SCALE,
+    SHUFFLE_SEED,
+    DataPaths,
+)
 
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp"}
 
@@ -205,9 +212,13 @@ def evaluation_sets(paths: DataPaths, held_out: int | None, size: int,
                     ) -> dict[str, Dataset]:
     """Every set that a checkpoint is evaluated on, decoded once and held in memory.
 
-    Keys: train, val, blend, shuffle, and, when available, imagewoof, textures, and
-    heldout. All sets use the evaluation transform. The blend and shuffle sets come
-    from the validation images.
+    Keys: train, val, blend, shuffle, and, when available, imagewoof, textures,
+    heldout, and the extra sets of `paths.extra`. All sets use the evaluation
+    transform. The blend and shuffle sets come from the validation images.
+
+    Raises:
+        ValueError: If an extra set has a reserved or repeated name.
+        FileNotFoundError: If a set has no images.
     """
     transform = eval_transform(size)
     train_files, train_labels, _, held_train = labelled_split(
@@ -229,6 +240,11 @@ def evaluation_sets(paths: DataPaths, held_out: int | None, size: int,
         unlabelled["textures"] = thin(list_images(paths.textures), limit)
     if held_out is not None:
         unlabelled["heldout"] = held_train + held_val
+    for name, folder in paths.extra:
+        if name in RESERVED_SETS or name in unlabelled:
+            raise ValueError(f"the set name {name} is reserved or used twice")
+        cap = paths.extra_limit if limit is None else limit
+        unlabelled[name] = thin(list_images(folder), cap)
     for name, files in unlabelled.items():
         if not files:
             raise FileNotFoundError(f"the set {name} has no images")
@@ -249,4 +265,12 @@ def manifest(paths: DataPaths) -> dict:
             for split in ("train", "val") if (Path(root) / split).is_dir()}
     if paths.textures is not None:
         out["textures"] = {"images": len(list_images(paths.textures))}
+    id_classes = set(class_folders(Path(paths.imagenette) / "train"))
+    for name, folder in paths.extra:
+        files = list_images(folder)
+        parts = {part for path in files for part in path.relative_to(folder).parts}
+        used = len(files) if paths.extra_limit is None else min(len(files),
+                                                                 paths.extra_limit)
+        out[name] = {"images": len(files), "used": used,
+                     "id_class_folders": sorted(parts & id_classes)}
     return out

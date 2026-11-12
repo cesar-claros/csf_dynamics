@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import numpy as np
 import pytest
 import torch
@@ -17,6 +19,7 @@ from dynamics.data import (
     eval_transform,
     evaluation_sets,
     labelled_split,
+    manifest,
     patch_permutations,
     shuffle_patches,
     thin,
@@ -122,3 +125,33 @@ def test_regime_a_training_images_equal_the_evaluation_images(tiny_data):
     sets = evaluation_sets(tiny_data, None, 32, workers=0)
     assert len(classes) == 10
     assert torch.equal(train[5][0], sets["train"][5][0])
+
+
+def test_extra_sets_are_capped_and_named(tiny_data):
+    extra = tiny_data.imagenette.parent / "openood"
+    paths = replace(tiny_data, extra=(("places", extra / "places"),
+                                      ("ssb_hard", extra / "ssb_hard")),
+                    extra_limit=20)
+    sets = evaluation_sets(paths, None, 32, workers=0)
+    assert len(sets["places"]) == 20 and len(sets["ssb_hard"]) == 18
+    assert sets["places"][0][0].shape == (3, 32, 32) and sets["places"][0][1] == -1
+    info = manifest(paths)
+    assert info["places"] == {"images": 30, "used": 20, "id_class_folders": []}
+    assert info["ssb_hard"]["used"] == 18
+
+
+def test_extra_set_names_cannot_shadow_a_pipeline_set(tiny_data):
+    extra = tiny_data.imagenette.parent / "openood"
+    for name in ("textures", "val", "id_errors"):
+        paths = replace(tiny_data, extra=((name, extra / "places"),))
+        with pytest.raises(ValueError, match="reserved"):
+            evaluation_sets(paths, None, 32, workers=0)
+
+
+def test_manifest_flags_an_extra_set_with_an_id_class_folder(tiny_data, tmp_path):
+    folder = tmp_path / "leaky" / "n1003"
+    folder.mkdir(parents=True)
+    source = next((tiny_data.imagenette / "val" / "n1003").iterdir())
+    (folder / source.name).write_bytes(source.read_bytes())
+    paths = replace(tiny_data, extra=(("leaky", tmp_path / "leaky"),))
+    assert manifest(paths)["leaky"]["id_class_folders"] == ["n1003"]

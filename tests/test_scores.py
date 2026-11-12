@@ -8,9 +8,11 @@ from dynamics.scores import (
     ALL_CSFS,
     CSF_GROUP,
     CSF_GROUPS,
+    LAYER_CSFS,
     NO_FIT_CSFS,
     all_scores,
     extra_scores,
+    layer_scores,
 )
 
 
@@ -103,3 +105,28 @@ def test_float64_fits_agree_with_float32_and_restore_the_default(layers):
                if key[1] != "NeCo") < 0.02
     for csf in LOGIT_ONLY:
         assert first[("far", csf)] == second[("far", csf)]
+
+
+def test_layer_scores_need_no_head(layers):
+    train = layers["train"]
+    for layer in ("stage1", "stage3"):
+        scores, errors = layer_scores(train[layer], train["labels"],
+                                      layers["far"][layer], layers["n_classes"])
+        assert errors == {} and set(scores) == set(LAYER_CSFS)
+        assert all(np.isfinite(values).all() for values in scores.values())
+        assert all(len(values) == len(layers["far"][layer])
+                   for values in scores.values())
+    assert torch.get_default_dtype() == torch.float32
+    assert set(LAYER_CSFS) <= set(ALL_CSFS) and len(LAYER_CSFS) == 5
+
+
+def test_evaluate_features_scores_the_earlier_layers(layers):
+    features = {name: layers[name] for name in ("train", "val", "far")}
+    out = evaluate_features(features, layers["w"], layers["b"], layers["n_classes"])
+    rows = out["layer_metrics"]
+    assert out["layer_errors"] == {}
+    assert {row["layer"] for row in rows} == {"stage1", "stage2", "stage3"}
+    assert len(rows) == 3 * len(LAYER_CSFS) * 2
+    far = {(row["layer"], row["csf"]): row["auroc"] for row in rows
+           if row["set"] == "far"}
+    assert far[("stage3", "kNN")] > 0.9

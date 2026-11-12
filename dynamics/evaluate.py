@@ -17,6 +17,7 @@ from torch.nn import functional as F
 from dynamics.config import (
     DEFAULT_PRECISION,
     IMAGE_SIZE,
+    LAYERS,
     PENULTIMATE,
     DataPaths,
     RunSpec,
@@ -29,7 +30,7 @@ from dynamics.descriptors import id_descriptors, placement_descriptors
 from dynamics.metrics import auroc, error_metrics, set_metrics
 from dynamics.model import build_model, extract
 from dynamics.paper_api import NC_METRICS, paper_nc
-from dynamics.scores import all_scores
+from dynamics.scores import all_scores, layer_scores
 
 
 def independent_logit_scores(logits: torch.Tensor) -> dict[str, np.ndarray]:
@@ -57,8 +58,10 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
         precision: Precision of the paper's feature CSFs, float32 or float64.
 
     Returns:
-        A dict with `metrics`, `descriptors`, `placement`, `checks`, `errors`,
-        `nonfinite`, and `counts`.
+        A dict with `metrics`, `layer_metrics`, `descriptors`, `placement`,
+        `checks`, `errors`, `layer_errors`, `nonfinite`, and `counts`.
+        `layer_metrics` holds the head-free CSFs on the layers before the
+        penultimate one.
     """
     train, val = features["train"], features["val"]
     unseen = {name: values for name, values in features.items()
@@ -84,6 +87,21 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
                 part(values, "val"), correct, part(values, name))})
         metrics.append({"set": "id_errors", "csf": csf,
                         **error_metrics(part(values, "val"), correct)})
+
+    layer_metrics = []
+    layer_errors: dict[str, str] = {}
+    for layer in LAYERS[:-1]:
+        stacked = torch.cat([features[name][layer] for name in order])
+        values_by_csf, failed = layer_scores(train[layer], train["labels"], stacked,
+                                             n_classes, device, precision)
+        layer_errors.update({f"{layer}:{csf}": text for csf, text in failed.items()})
+        for csf, values in values_by_csf.items():
+            for name in unseen:
+                layer_metrics.append({"layer": layer, "set": name, "csf": csf,
+                                      **set_metrics(part(values, "val"), correct,
+                                                    part(values, name))})
+            layer_metrics.append({"layer": layer, "set": "id_errors", "csf": csf,
+                                  **error_metrics(part(values, "val"), correct)})
 
     independent = independent_logit_scores(logits)
     gaps = [abs(auroc(part(scores[csf], "val"), part(scores[csf], name))
@@ -111,6 +129,8 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
     descriptors += id_descriptors(train, val, n_classes, device)
     return {
         "metrics": metrics,
+        "layer_metrics": layer_metrics,
+        "layer_errors": layer_errors,
         "descriptors": descriptors,
         "placement": placement_descriptors(train, val, unseen, correct, n_classes,
                                            device),
@@ -134,7 +154,7 @@ def load_model(path: Path, device: torch.device) -> tuple[torch.nn.Module, dict]
 def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
                  device: torch.device, epochs: list[int] | None = None,
                  precision: str = DEFAULT_PRECISION, recheck: bool = False,
-                 workers: int = 4, limit: int | None = None,
+                 suite: str = "", workers: int = 4, limit: int | None = None,
                  image_size: int = IMAGE_SIZE, keep_features: bool = False) -> None:
     """Evaluate the checkpoints of one run; skip the checkpoints already evaluated.
 
@@ -143,12 +163,13 @@ def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
         precision: Precision of the paper's feature CSFs. Each precision has its
             own results folder.
         recheck: Write to the folder of the second extraction, for gate G3.
+        suite: Name of an evaluation with extra OOD sets. It has its own folder.
 
     Raises:
         FileNotFoundError: If the run has no checkpoint.
     """
     folder = run_dir(out_root, spec.name)
-    tag = results_folder(precision, recheck)
+    tag = results_folder(precision, recheck, suite)
     saved = sorted(int(path.stem.split("_")[1])
                    for path in (folder / "checkpoints").glob("epoch_*.pt"))
     if not saved:
@@ -182,4 +203,5 @@ def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
         accuracy = next(row["value"] for row in out["descriptors"]
                         if row["name"] == "val_accuracy")
         print(f"[eval] {spec.name} ({tag}) epoch {epoch}: val acc {accuracy:.4f}, "
-              f"{len(out['errors'])} CSF errors, {out['seconds']}s", flush=True)
+              f"{len(out['errors']) + len(out['layer_errors'])} CSF errors, "
+              f"{out['seconds']}s", flush=True)

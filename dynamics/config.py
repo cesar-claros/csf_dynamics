@@ -33,6 +33,11 @@ DEFAULT_PRECISION = "float64"
 
 LAYERS = ("stage1", "stage2", "stage3", "stage4")
 PENULTIMATE = "stage4"
+#: Largest number of images that an extra OOD set contributes (evenly thinned).
+EXTRA_LIMIT = 5000
+#: Set names that the pipeline uses itself. An extra set cannot take one of them.
+RESERVED_SETS = ("train", "val", "blend", "shuffle", "imagewoof", "textures",
+                 "heldout", "id_errors")
 
 
 @dataclass(frozen=True)
@@ -94,22 +99,36 @@ STAGES: dict[str, list[RunSpec]] = {
 
 @dataclass(frozen=True)
 class DataPaths:
-    """Dataset folders. Imagenette and Imagewoof hold `train/` and `val/`."""
+    """Dataset folders. Imagenette and Imagewoof hold `train/` and `val/`.
+
+    `extra` holds more OOD sets as (name, folder) pairs. Each contributes at most
+    `extra_limit` images.
+    """
 
     imagenette: Path
     imagewoof: Path | None = None
     textures: Path | None = None
+    extra: tuple[tuple[str, Path], ...] = ()
+    extra_limit: int | None = EXTRA_LIMIT
 
 
-def results_folder(precision: str = DEFAULT_PRECISION, recheck: bool = False) -> str:
-    """Name of the results folder of a run for one precision.
+def results_folder(precision: str = DEFAULT_PRECISION, recheck: bool = False,
+                   suite: str = "") -> str:
+    """Name of the results folder of a run.
+
+    Args:
+        precision: Precision of the fitted CSFs.
+        recheck: The folder of the second extraction, for gate G3.
+        suite: Name of an evaluation with more sets than the base one, for example
+            `step0`. It keeps those results apart from the base results.
 
     Raises:
         ValueError: If the precision is unknown.
     """
     if precision not in PRECISIONS:
         raise ValueError(f"unknown precision: {precision}")
-    return PRECISIONS[precision] + ("_recheck" if recheck else "")
+    return (PRECISIONS[precision] + (f"_{suite}" if suite else "")
+            + ("_recheck" if recheck else ""))
 
 
 def run_dir(out_root: Path, name: str) -> Path:

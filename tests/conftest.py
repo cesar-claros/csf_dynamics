@@ -47,6 +47,11 @@ def make_tiny_data(root: Path, n_classes: int = 10, train: int = 24, val: int = 
     for item in range(40):
         noise = rng.uniform(0, 255, (72, 88, 3)).astype(np.uint8)
         Image.fromarray(noise).save(textures / f"dotted_{item:03d}.jpg")
+    for name, count in (("places", 30), ("ssb_hard", 18)):
+        folder = root / "openood" / name / "images" / "n9999"
+        folder.mkdir(parents=True)
+        for item in range(count):
+            pattern(rng, 0.5 + item / count, 5).save(folder / f"{name}_{item:03d}.jpg")
     return DataPaths(root / "imagenette", root / "imagewoof", root / "textures")
 
 

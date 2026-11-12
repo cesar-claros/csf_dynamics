@@ -209,8 +209,25 @@ def test_fitted_csfs_use_only_converged_cells_in_link_two(results):
                                analyze_e.converged_checkpoints(clock))
     cells = table.set_index("csf")["cells"]
     assert cells["MLS"] == 6 * 3 * 5 and cells["Maha"] == 6 * 1 * 5
+    assert list(table.columns[3:]) == ["base", "clock", "epoch_mean", "placement",
+                                       "both"]
     assert set(table["group"]) == {"no_fit", "fit_plain", "fit_relative",
                                    "fit_absolute"}
+
+
+def test_strict_clock_predicts_from_the_other_runs_at_the_same_epoch():
+    rng = np.random.default_rng(0)
+    cells = pd.DataFrame([{"run": f"{recipe}{seed}", "recipe": recipe, "epoch": epoch}
+                          for recipe in "AB" for seed in range(4)
+                          for epoch in (1, 2, 4, 8)])
+    trend = np.sin(cells["epoch"].to_numpy()) + (cells["recipe"] == "B").to_numpy()
+    noisy = trend + 0.01 * rng.standard_normal(len(cells))
+    by = ["recipe", "epoch"]
+    assert analyze_e.epoch_mean_r2(cells, noisy, by) > 0.99
+    assert analyze_e.epoch_mean_r2(cells, rng.standard_normal(len(cells)), by) < 0.2
+    assert np.isnan(analyze_e.epoch_mean_r2(cells, np.ones(len(cells)), by))
+    alone = cells[cells["run"] == "A0"]
+    assert np.isnan(analyze_e.epoch_mean_r2(alone, noisy[: len(alone)], by))
 
 
 def test_out_of_run_r2_recovers_a_linear_relation():

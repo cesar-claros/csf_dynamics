@@ -19,6 +19,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/evaluate.py` | Evaluates every checkpoint of a run (HPC). |
 | `dynamics/run_stage.py` | Trains and evaluates the runs of a stage (HPC). |
 | `dynamics/analyze_e.py` | Stage E gates, rosters, convergence, design-regime check, and analyses E1 to E7 (local). |
+| `dynamics/analyze_step0.py` | Step 0: the two rules of amendment A4 on more OOD sets and an earlier layer (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
 | `requirements-hpc.txt` | The packages that an x9 image built before 2026-11-10 lacks, with exact versions. |
 
@@ -102,6 +103,24 @@ To evaluate existing runs again without training, add `--skip-train`. This is ho
 
 ```bash
 nohup bash -c "python -m dynamics.run_stage --stage e_main --skip-train --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR && python -m dynamics.run_stage --stage e_main --recheck --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR && python -m dynamics.run_stage --stage e_heldout --skip-train --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR" > dyn_stage_e_f64.log 2>&1 &
+```
+
+### Step 0: more OOD sets and an earlier layer (amendment A4)
+
+This evaluates the saved checkpoints of the 10 main runs again, with seven more OOD sets and with the head-free CSFs at stages 1 to 3. It trains nothing. The results go to `results_f64_step0/`. Use exactly these set names, because the analysis reads them:
+
+```bash
+export OOD=/path/to/openood/folder
+```
+
+```bash
+nohup python -m dynamics.run_stage --stage e_main --skip-train --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_step0.log 2>&1 &
+```
+
+Each extra set contributes at most 5,000 images (`--extra-limit`). Local analysis:
+
+```bash
+uv run python -m dynamics.analyze_step0 --results-root dyn_results
 ```
 
 Pack the results without the checkpoints:
