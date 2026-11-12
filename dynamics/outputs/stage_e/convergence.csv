@@ -1,0 +1,11 @@
+run,first_converged_epoch,recipe,converged_checkpoints,disturbed_checkpoints
+A_seed0,25,A,11,60
+A_seed1,40,A,8,80 100
+A_seed2,25,A,11,60
+A_seed3,40,A,9,80
+A_seed4,25,A,11,60
+B_seed0,140,B,4,
+B_seed1,160,B,3,
+B_seed2,160,B,3,
+B_seed3,140,B,4,
+B_seed4,160,B,3,
