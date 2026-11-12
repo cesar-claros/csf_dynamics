@@ -18,18 +18,18 @@ from pathlib import Path
 import torch
 
 from dynamics.config import (
+    DEFAULT_PRECISION,
     EPOCHS,
     IMAGE_SIZE,
+    PRECISIONS,
     STAGES,
     DataPaths,
     RunSpec,
     checkpoint_epochs,
     parse_run,
 )
-from dynamics.evaluate import RESULTS, evaluate_run
+from dynamics.evaluate import evaluate_run
 from dynamics.train import train_run
-
-RECHECK = "results_recheck"
 
 
 def recheck_epochs(epochs: int) -> list[int]:
@@ -51,6 +51,10 @@ def main() -> None:
     parser.add_argument("--skip-eval", action="store_true")
     parser.add_argument("--recheck", action="store_true",
                         help="gate G3: evaluate 3 checkpoints of seed-0 runs again")
+    parser.add_argument("--precision", choices=sorted(PRECISIONS),
+                        default=DEFAULT_PRECISION,
+                        help="precision of the fitted CSFs; each has its own "
+                             "results folder")
     parser.add_argument("--keep-features", action="store_true")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available()
@@ -85,13 +89,14 @@ def main() -> None:
             if args.recheck:
                 if spec.seed == 0 and spec.held_out is None:
                     evaluate_run(spec, paths, out_root, device,
-                                 epochs=recheck_epochs(args.epochs), tag=RECHECK,
-                                 **shared)
+                                 epochs=recheck_epochs(args.epochs),
+                                 precision=args.precision, recheck=True, **shared)
                 continue
             if not args.skip_train:
                 train_run(spec, paths, out_root, device, epochs=args.epochs, **shared)
             if not args.skip_eval:
-                evaluate_run(spec, paths, out_root, device, tag=RESULTS,
+                evaluate_run(spec, paths, out_root, device,
+                             precision=args.precision,
                              keep_features=args.keep_features, **shared)
         except Exception:  # noqa: BLE001 - continue with the next run
             failures.append(spec.name)

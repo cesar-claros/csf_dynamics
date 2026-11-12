@@ -25,6 +25,12 @@ GRID = 4
 BLEND_SEED = 0
 SHUFFLE_SEED = 0
 
+#: Precision of the fitted CSFs, and the results folder of each precision. The
+#: folder of a second extraction for gate G3 adds `_recheck`. Protocol amendment A3
+#: adopts float64: float32 fits failed gate G3 on the Stage E runs.
+PRECISIONS = {"float32": "results", "float64": "results_f64"}
+DEFAULT_PRECISION = "float64"
+
 LAYERS = ("stage1", "stage2", "stage3", "stage4")
 PENULTIMATE = "stage4"
 
@@ -93,6 +99,17 @@ class DataPaths:
     imagenette: Path
     imagewoof: Path | None = None
     textures: Path | None = None
+
+
+def results_folder(precision: str = DEFAULT_PRECISION, recheck: bool = False) -> str:
+    """Name of the results folder of a run for one precision.
+
+    Raises:
+        ValueError: If the precision is unknown.
+    """
+    if precision not in PRECISIONS:
+        raise ValueError(f"unknown precision: {precision}")
+    return PRECISIONS[precision] + ("_recheck" if recheck else "")
 
 
 def run_dir(out_root: Path, name: str) -> Path:

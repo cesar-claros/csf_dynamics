@@ -15,11 +15,13 @@ import torch
 from torch.nn import functional as F
 
 from dynamics.config import (
+    DEFAULT_PRECISION,
     IMAGE_SIZE,
     PENULTIMATE,
     DataPaths,
     RunSpec,
     checkpoint_path,
+    results_folder,
     run_dir,
 )
 from dynamics.data import evaluation_sets, manifest
@@ -28,8 +30,6 @@ from dynamics.metrics import auroc, error_metrics, set_metrics
 from dynamics.model import build_model, extract
 from dynamics.paper_api import NC_METRICS, paper_nc
 from dynamics.scores import all_scores
-
-RESULTS = "results"
 
 
 def independent_logit_scores(logits: torch.Tensor) -> dict[str, np.ndarray]:
@@ -43,7 +43,8 @@ def independent_logit_scores(logits: torch.Tensor) -> dict[str, np.ndarray]:
 
 
 def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tensor,
-                      n_classes: int, device: torch.device | None = None) -> dict:
+                      n_classes: int, device: torch.device | None = None,
+                      precision: str = DEFAULT_PRECISION) -> dict:
     """All outputs of one checkpoint from its extracted features.
 
     Args:
@@ -53,6 +54,7 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
         b: Head bias.
         n_classes: Number of ID classes of this model.
         device: Device for the neighbor search.
+        precision: Precision of the paper's feature CSFs, float32 or float64.
 
     Returns:
         A dict with `metrics`, `descriptors`, `placement`, `checks`, `errors`,
@@ -67,7 +69,8 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
     evaluation = torch.cat([features[name][PENULTIMATE] for name in order])
     logits = torch.cat([features[name]["logits"] for name in order])
     scores, errors = all_scores(train[PENULTIMATE], train["labels"], train["logits"],
-                                w, b, evaluation, logits, n_classes, device)
+                                w, b, evaluation, logits, n_classes, device,
+                                precision)
     correct = (val["logits"].argmax(dim=1) == val["labels"]).numpy()
 
     def part(values: np.ndarray, name: str) -> np.ndarray:
@@ -117,6 +120,7 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
         "nonfinite": {csf: int((~np.isfinite(values)).sum())
                       for csf, values in scores.items()},
         "counts": dict(zip(order, sizes)) | {"train": len(train["logits"])},
+        "precision": precision,
     }
 
 
@@ -129,18 +133,22 @@ def load_model(path: Path, device: torch.device) -> tuple[torch.nn.Module, dict]
 
 def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
                  device: torch.device, epochs: list[int] | None = None,
-                 tag: str = RESULTS, workers: int = 4, limit: int | None = None,
+                 precision: str = DEFAULT_PRECISION, recheck: bool = False,
+                 workers: int = 4, limit: int | None = None,
                  image_size: int = IMAGE_SIZE, keep_features: bool = False) -> None:
     """Evaluate the checkpoints of one run; skip the checkpoints already evaluated.
 
     Args:
         epochs: Checkpoint epochs to evaluate. The default is every saved one.
-        tag: Output folder name inside the run folder. Gate G3 uses a second tag.
+        precision: Precision of the paper's feature CSFs. Each precision has its
+            own results folder.
+        recheck: Write to the folder of the second extraction, for gate G3.
 
     Raises:
         FileNotFoundError: If the run has no checkpoint.
     """
     folder = run_dir(out_root, spec.name)
+    tag = results_folder(precision, recheck)
     saved = sorted(int(path.stem.split("_")[1])
                    for path in (folder / "checkpoints").glob("epoch_*.pt"))
     if not saved:
@@ -165,7 +173,7 @@ def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
             torch.save(features, target)
         out = evaluate_features(features, model.fc.weight.detach().float().cpu(),
                                 model.fc.bias.detach().float().cpu(),
-                                len(state["classes"]), device)
+                                len(state["classes"]), device, precision)
         out.update(run=spec.name, epoch=epoch, n_classes=len(state["classes"]),
                    seconds=round(time.time() - began, 1))
         temporary = folder / tag / f"epoch_{epoch:03d}.tmp"

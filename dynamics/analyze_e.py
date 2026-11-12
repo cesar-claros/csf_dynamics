@@ -19,7 +19,14 @@ import numpy as np
 import pandas as pd
 from scipy.stats import kendalltau, spearmanr
 
-from dynamics.config import PENULTIMATE, STAGES, parse_run
+from dynamics.config import (
+    DEFAULT_PRECISION,
+    PENULTIMATE,
+    PRECISIONS,
+    STAGES,
+    parse_run,
+    results_folder,
+)
 from dynamics.scores import ALL_CSFS, CSF_GROUP, NO_FIT_CSFS
 
 HERE = Path(__file__).resolve().parent
@@ -34,8 +41,8 @@ STAGE_E = frozenset(spec.name for stage in ("e_main", "e_heldout")
 TOLERANCE = 1e-6
 PENALTY = 10.0
 MATERIALITY = 1.0
-#: A run has converged at the first checkpoint whose validation accuracy is within
-#: this margin of its final validation accuracy (protocol amendment A1).
+#: A checkpoint counts as converged if its validation accuracy is at most this far
+#: below the final validation accuracy of its run (protocol amendments A1 and A2).
 CONVERGENCE_MARGIN = 0.01
 SUBSET_SIZES = (1, 2, 3, 5, 10)
 CLOCK = ["log_epoch", "train_accuracy", "train_loss", "val_accuracy"]
@@ -52,7 +59,7 @@ class Tables:
     checks: pd.DataFrame
 
 
-def read_runs(root: Path, tag: str = "results") -> Tables:
+def read_runs(root: Path, tag: str) -> Tables:
     """Read <root>/runs/<run>/<tag>/epoch_*.json of every run folder."""
     parts: dict[str, list[dict]] = {"metrics": [], "descriptors": [], "placement": [],
                                     "checks": []}
@@ -90,19 +97,39 @@ def clock_table(descriptors: pd.DataFrame) -> pd.DataFrame:
     return table
 
 
-def convergence_epochs(clock: pd.DataFrame, margin: float = CONVERGENCE_MARGIN
-                       ) -> pd.Series:
-    """Per run, the first checkpoint within `margin` of the final validation accuracy."""
+def converged_checkpoints(clock: pd.DataFrame, margin: float = CONVERGENCE_MARGIN
+                          ) -> pd.Series:
+    """Per (run, epoch), whether the checkpoint counts as converged.
+
+    A checkpoint is converged if its own validation accuracy is at most `margin`
+    below the final validation accuracy of its run (amendment A2). So a checkpoint
+    inside a training instability is not converged, at any epoch.
+    """
     ordered = clock.sort_values("epoch")
     final = ordered.groupby("run")["val_accuracy"].last()
-    near = ordered[ordered["val_accuracy"] >= ordered["run"].map(final) - margin]
-    return near.groupby("run")["epoch"].min()
+    flags = ordered["val_accuracy"] >= ordered["run"].map(final) - margin
+    index = pd.MultiIndex.from_arrays([ordered["run"], ordered["epoch"]],
+                                      names=["run", "epoch"])
+    return pd.Series(flags.to_numpy(), index=index, name="converged")
 
 
-def is_converged(runs, epochs, convergence: pd.Series) -> np.ndarray:
-    """Whether each (run, epoch) pair is at or after the convergence of its run."""
-    limit = pd.Series(np.asarray(runs)).map(convergence).to_numpy()
-    return np.asarray(epochs) >= limit
+def convergence_epochs(converged: pd.Series) -> pd.Series:
+    """Per run, the first converged checkpoint."""
+    epochs = converged[converged].reset_index()
+    return epochs.groupby("run")["epoch"].min()
+
+
+def disturbed_checkpoints(converged: pd.Series) -> pd.DataFrame:
+    """Checkpoints after the first converged one of their run that are not converged."""
+    first = convergence_epochs(converged)
+    rows = converged[~converged].reset_index()[["run", "epoch"]]
+    return rows[rows["epoch"] > rows["run"].map(first)].reset_index(drop=True)
+
+
+def is_converged(runs, epochs, converged: pd.Series) -> np.ndarray:
+    """Whether each (run, epoch) pair is a converged checkpoint."""
+    index = pd.MultiIndex.from_arrays([np.asarray(runs), np.asarray(epochs)])
+    return converged.reindex(index, fill_value=False).to_numpy(dtype=bool)
 
 
 def gates(tables: Tables, recheck: Tables | None, manifest: dict | None
@@ -215,15 +242,15 @@ def main_rows(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def fixed_best(points: pd.DataFrame, reference: pd.DataFrame | None = None,
-               convergence: pd.Series | None = None) -> pd.DataFrame:
+               converged: pd.Series | None = None) -> pd.DataFrame:
     """E1: per external set and epoch, the CSF that is best on average (B1).
 
     Args:
         points: AUROC points of the roster to choose from.
         reference: AUROC points of the full roster. With it, `cost_vs_full` is the
             mean gap between the best CSF of the full roster and of this roster.
-        convergence: Convergence epoch per run. With it, `converged_runs` is the
-            share of the runs that have converged at that epoch.
+        converged: Flags of `converged_checkpoints`. With them, `converged_runs`
+            is the share of the runs whose checkpoint at that epoch is converged.
     """
     rows = []
     blocks = main_rows(points).groupby(level=["set", "epoch"])
@@ -244,33 +271,33 @@ def fixed_best(points: pd.DataFrame, reference: pd.DataFrame | None = None,
         if reference is not None:
             row["cost_vs_full"] = float(
                 (reference.loc[block.index].max(axis=1) - best).mean())
-        if convergence is not None:
+        if converged is not None:
             level = block.index.get_level_values
             row["converged_runs"] = float(is_converged(level("run"), level("epoch"),
-                                                       convergence).mean())
+                                                       converged).mean())
         rows.append(row)
     return pd.DataFrame(rows)
 
 
-def trajectories(points: pd.DataFrame, convergence: pd.Series | None = None
+def trajectories(points: pd.DataFrame, converged: pd.Series | None = None
                  ) -> pd.DataFrame:
     """E2: mean and spread over seeds of each AUROC, per regime, set, and epoch."""
     long = main_rows(points).stack().rename("auroc").reset_index()
     long["group"] = long["csf"].map(CSF_GROUP)
-    long["converged"] = (True if convergence is None else
-                         is_converged(long["run"], long["epoch"], convergence))
+    long["converged"] = (True if converged is None else
+                         is_converged(long["run"], long["epoch"], converged))
     return (long.groupby(["recipe", "set", "epoch", "group", "csf"])
             .agg(mean=("auroc", "mean"), std=("auroc", "std"),
                  count=("auroc", "count"), converged_runs=("converged", "mean"))
             .reset_index())
 
 
-def design_regime(points: pd.DataFrame, convergence: pd.Series) -> pd.DataFrame:
-    """Mean regret of each CSF before and after the convergence of its run.
+def design_regime(points: pd.DataFrame, converged: pd.Series) -> pd.DataFrame:
+    """Mean regret of each CSF on unconverged and on converged checkpoints.
 
     The regret is against the best CSF of the roster in the same cell, on the
-    external sets. `excess` is the regret before convergence minus the regret after
-    it, averaged over runs and sets.
+    external sets. `excess` is the regret on the unconverged checkpoints minus the
+    regret on the converged ones, averaged over runs and sets.
     """
     cells = main_rows(points)
     cells = cells[cells.index.get_level_values("set").isin(EXTERNAL)]
@@ -278,14 +305,19 @@ def design_regime(points: pd.DataFrame, convergence: pd.Series) -> pd.DataFrame:
         return pd.DataFrame()
     regret = cells.rsub(cells.max(axis=1), axis=0).reset_index()
     long = regret.melt(id_vars=KEYS + ["set"], var_name="csf", value_name="regret")
-    long["phase"] = np.where(is_converged(long["run"], long["epoch"], convergence),
-                             "converged", "before")
+    long["phase"] = phase_of(long, converged)
     per_run = (long.groupby(["csf", "run", "set", "phase"])["regret"].mean()
-               .unstack("phase").reindex(columns=["before", "converged"]))
-    per_run["excess"] = per_run["before"] - per_run["converged"]
+               .unstack("phase").reindex(columns=["unconverged", "converged"]))
+    per_run["excess"] = per_run["unconverged"] - per_run["converged"]
     table = per_run.groupby("csf").mean().reset_index()
     table.insert(0, "group", table["csf"].map(CSF_GROUP))
     return table.sort_values(["group", "csf"]).reset_index(drop=True)
+
+
+def phase_of(frame: pd.DataFrame, converged: pd.Series) -> np.ndarray:
+    """`converged` or `unconverged` for each row, from its run and epoch."""
+    return np.where(is_converged(frame["run"], frame["epoch"], converged),
+                    "converged", "unconverged")
 
 
 def pick_quality(ranking: pd.Series, target: pd.Series) -> tuple[float, float]:
@@ -356,15 +388,15 @@ def held_out_stand_in(points: pd.DataFrame, seed: int = 0
 
 
 def metric_agreement(metrics: pd.DataFrame, csfs: list[str],
-                     convergence: pd.Series | None = None) -> pd.DataFrame:
+                     converged: pd.Series | None = None) -> pd.DataFrame:
     """E6: Kendall correlation between the CSF rankings under each pair of metrics.
 
-    With `convergence`, only the converged cells are used.
+    With `converged`, only the converged cells are used.
     """
     kept = metrics[metrics["csf"].isin(csfs) & (metrics["epoch"] >= 1)
                    & (metrics["held_out"] < 0) & metrics["set"].isin(EXTERNAL)]
-    if convergence is not None:
-        kept = kept[is_converged(kept["run"], kept["epoch"], convergence)]
+    if converged is not None:
+        kept = kept[is_converged(kept["run"], kept["epoch"], converged)]
     rows = []
     for (run, epoch, name), cell in kept.groupby(["run", "epoch", "set"]):
         scores = {metric: sign * cell.set_index("csf")[metric].reindex(csfs)
@@ -428,10 +460,10 @@ def placement_wide(placement: pd.DataFrame) -> pd.DataFrame:
 
 
 def link_two(points: pd.DataFrame, placement: pd.DataFrame, clock: pd.DataFrame,
-             convergence: pd.Series | None = None) -> pd.DataFrame:
+             converged: pd.Series | None = None) -> pd.DataFrame:
     """E3: does placement predict the AUROC of each CSF beyond the clock?
 
-    With `convergence`, a fitted CSF uses only the converged cells, where it is
+    With `converged`, a fitted CSF uses only the converged cells, where it is
     inside its design regime. A no-fit CSF uses every cell.
     """
     features = placement_wide(placement)
@@ -448,8 +480,8 @@ def link_two(points: pd.DataFrame, placement: pd.DataFrame, clock: pd.DataFrame,
                "both": np.hstack([base, cells[CLOCK + names].to_numpy()])}
     groups = cells["run"].to_numpy()
     everywhere = np.ones(len(cells), dtype=bool)
-    late = (everywhere if convergence is None else
-            is_converged(cells["run"], cells["epoch"], convergence))
+    late = (everywhere if converged is None else
+            is_converged(cells["run"], cells["epoch"], converged))
     rows = []
     for csf in points.columns:
         keep = everywhere if csf in NO_FIT_CSFS else late
@@ -516,24 +548,21 @@ def expected_runs(found: set[str]) -> str:
     return "\n".join(lines)
 
 
-def phase_of(frame: pd.DataFrame, convergence: pd.Series) -> np.ndarray:
-    """`converged` or `before` for each row, from its run and epoch."""
-    return np.where(is_converged(frame["run"], frame["epoch"], convergence),
-                    "converged", "before")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--results-root", required=True)
+    parser.add_argument("--precision", choices=sorted(PRECISIONS),
+                        default=DEFAULT_PRECISION,
+                        help="which results folder to read")
     parser.add_argument("--out", default=str(HERE / "outputs" / "stage_e_report.md"))
     args = parser.parse_args()
     root = Path(args.results_root)
-    everything = read_runs(root)
+    everything = read_runs(root, results_folder(args.precision))
     tables = stage_e_only(everything)
     if tables.metrics.empty:
         raise SystemExit(f"no Stage E results under {root}/runs")
     ignored = sorted(set(everything.metrics["run"]) - STAGE_E)
-    recheck = stage_e_only(read_runs(root, "results_recheck"))
+    recheck = stage_e_only(read_runs(root, results_folder(args.precision, True)))
     manifests = sorted((root / "runs").glob("*/manifest.json"))
     manifest = json.loads(manifests[0].read_text()) if manifests else None
     out_dir = Path(args.out).parent / "stage_e"
@@ -544,14 +573,14 @@ def main() -> None:
     rosters = {"full": csfs, "no_fit": [csf for csf in csfs if csf in NO_FIT_CSFS]}
     points = wide(tables.metrics, csfs)
     clock = clock_table(tables.descriptors)
-    convergence = convergence_epochs(clock)
+    converged = converged_checkpoints(clock)
     final = int(tables.metrics["epoch"].max())
 
-    best = pd.concat([fixed_best(points[names], points, convergence)
+    best = pd.concat([fixed_best(points[names], points, converged)
                       .assign(roster=name) for name, names in rosters.items()],
                      ignore_index=True)
-    paths = trajectories(points, convergence)
-    regime = design_regime(points, convergence)
+    paths = trajectories(points, converged)
+    regime = design_regime(points, converged)
     stand_ins = pd.concat([within_model_stand_ins(points[names]).assign(roster=name)
                            for name, names in rosters.items()], ignore_index=True)
     held_parts, subset_parts = [], []
@@ -563,15 +592,23 @@ def main() -> None:
     subsets = pd.concat(subset_parts, ignore_index=True)
     for frame in (stand_ins, held):
         if not frame.empty:
-            frame["phase"] = phase_of(frame, convergence)
-    agreement = metric_agreement(tables.metrics, csfs, convergence)
+            frame["phase"] = phase_of(frame, converged)
+    agreement = metric_agreement(tables.metrics, csfs, converged)
     noise = seed_noise(points)
-    second = link_two(points, tables.placement, clock, convergence)
+    second = link_two(points, tables.placement, clock, converged)
     first = link_one(tables.descriptors, tables.placement, clock)
 
     recipes = clock[clock["held_out"] < 0][["run", "recipe"]].drop_duplicates()
-    converged_at = (convergence.rename("convergence_epoch").reset_index()
-                    .merge(recipes, on="run"))
+    flags = converged.reset_index().merge(recipes, on="run")
+    flags = flags[flags["epoch"] >= 1]
+    converged_at = (convergence_epochs(converged).rename("first_converged_epoch")
+                    .reset_index().merge(recipes, on="run"))
+    converged_at["converged_checkpoints"] = converged_at["run"].map(
+        flags.groupby("run")["converged"].sum())
+    disturbed = disturbed_checkpoints(converged).merge(recipes, on="run")
+    converged_at["disturbed_checkpoints"] = converged_at["run"].map(
+        disturbed.groupby("run")["epoch"].apply(
+            lambda epochs: " ".join(str(e) for e in epochs))).fillna("")
     descriptor_paths = (tables.descriptors[tables.descriptors["held_out"] < 0]
                         .groupby(["recipe", "group", "name", "layer", "epoch"])
                         ["value"].agg(["mean", "std", "count"]).reset_index())
@@ -613,7 +650,8 @@ def main() -> None:
     models = ["base", "clock", "placement", "both"]
     link_two_summary = (second.groupby("group")[models].median().reset_index()
                         if not second.empty else second)
-    regime_summary = summary(regime, ["group"], ["before", "converged", "excess"])
+    regime_summary = summary(regime, ["group"],
+                             ["unconverged", "converged", "excess"])
     if not regime_summary.empty:
         regime_summary = regime_summary.rename(columns={"cells": "csfs"})
 
@@ -622,6 +660,7 @@ def main() -> None:
         ("Runs", (expected_runs(found)
                   + (f"\n- Ignored runs of other stages: {', '.join(ignored)}"
                      if ignored else "")
+                  + f"\n- Precision of the fitted CSFs: {args.precision}."
                   + f"\n- Last epoch in the results: {final}. "
                   "Epoch 0 is the random start. It is outside the roster rule and "
                   "the tables below.")),
@@ -635,14 +674,15 @@ def main() -> None:
          + ("- No CSF is removed by the roster rule.\n" if dropped.empty else
             "- Removed by the roster rule (number of failing cells, and the first "
             "one):\n\n" + block(dropped) + "\n")
-         + "\nA run has converged at the first checkpoint whose validation accuracy "
-         f"is within {100 * CONVERGENCE_MARGIN:.0f} point of its final value. Before "
-         "that, the fitted CSFs are outside their design regime, and the no-fit "
-         "roster is the reference. Convergence epoch of the main runs:\n\n"
-         + block(summary(converged_at, ["recipe"], ["convergence_epoch"])
-                 .rename(columns={"cells": "runs"}) if not converged_at.empty
-                 else converged_at)
-         + f"\n\nPer run: `{out_dir.name}/convergence.csv`."),
+         + "\nA checkpoint is converged if its validation accuracy is at most "
+         f"{100 * CONVERGENCE_MARGIN:.0f} point below the final value of its run. On "
+         "the other checkpoints, the fitted CSFs are outside their design regime, "
+         "and the no-fit roster is the reference. A disturbed checkpoint is an "
+         "unconverged one after the first converged one. Main runs:\n\n"
+         + block(converged_at[["run", "first_converged_epoch",
+                               "converged_checkpoints", "disturbed_checkpoints"]]
+                 if not converged_at.empty else converged_at)
+         + f"\n\nAlso in `{out_dir.name}/convergence.csv`."),
         ("E1: is there something to predict?",
          "For each external set and roster: the CSF that is best on average over the "
          "main runs (B1), its regret in AUROC points, the regret of a random CSF, how "
@@ -655,10 +695,10 @@ def main() -> None:
          "The five best CSFs at the last epoch, mean and spread over seeds:\n\n"
          + block(top)),
         ("Design regime of the fitted CSFs",
-         "Mean regret of each CSF group on the external sets, before and after the "
-         "convergence of the run, and the difference (`excess`). A larger excess for "
-         "the fitted groups than for `no_fit` means that the fitted CSFs lose more "
-         "before convergence.\n\n" + block(regime_summary)
+         "Mean regret of each CSF group on the external sets, on the unconverged "
+         "and on the converged checkpoints, and the difference (`excess`). A larger "
+         "excess for the fitted groups than for `no_fit` means that the fitted CSFs "
+         "lose more on unconverged checkpoints.\n\n" + block(regime_summary)
          + f"\n\nPer CSF: `{out_dir.name}/design_regime.csv`."),
         ("E3: placement to ranking",
          "Out-of-run R2 of the logit of each CSF's AUROC. All models read the set "

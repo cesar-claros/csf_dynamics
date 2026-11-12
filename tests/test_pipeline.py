@@ -26,6 +26,7 @@ def pipeline(tiny_data, tmp_path_factory):
 
     stage("--only", "B_seed0", "A_seed0_hold1")
     stage("--only", "B_seed0", "A_seed0_hold1", "--recheck")
+    stage("--only", "B_seed0", "--skip-train", "--precision", "float32")
     return root, stage
 
 
@@ -43,20 +44,35 @@ def test_run_folders(out_root):
         assert len((folder / "train_log.csv").read_text().splitlines()) == 2
         meta = json.loads((folder / "meta.json").read_text())
         assert len(meta["classes"]) == classes
-        out = json.loads((folder / "results" / "epoch_001.json").read_text())
+        out = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
         assert out["n_classes"] == classes and out["errors"] == {}
+        assert out["precision"] == "float64"
         sets = {row["set"] for row in out["metrics"]}
         assert ("heldout" in sets) == (classes == 9)
         assert len(out["metrics"]) == len(ALL_CSFS) * len(sets)
         assert out["checks"]["g4_max_gap"] < 1e-9
-    assert not (out_root / "runs" / "A_seed0_hold1" / "results_recheck").exists()
+    assert not (out_root / "runs" / "A_seed0_hold1" / "results_f64_recheck").exists()
 
 
 def test_second_extraction_gives_the_same_metrics(out_root):
     folder = out_root / "runs" / "B_seed0"
-    first = json.loads((folder / "results" / "epoch_001.json").read_text())
-    again = json.loads((folder / "results_recheck" / "epoch_001.json").read_text())
+    first = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
+    again = json.loads((folder / "results_f64_recheck" / "epoch_001.json")
+                       .read_text())
     assert first["metrics"] == again["metrics"]
+
+
+def test_each_precision_writes_to_its_own_folder(out_root, tmp_path, monkeypatch):
+    folder = out_root / "runs" / "B_seed0"
+    single = json.loads((folder / "results" / "epoch_001.json").read_text())
+    double = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
+    assert single["precision"] == "float32" and double["precision"] == "float64"
+    assert single["errors"] == {} and len(double["metrics"]) == len(single["metrics"])
+    report = tmp_path / "report.md"
+    monkeypatch.setattr("sys.argv", ["analyze_e", "--results-root", str(out_root),
+                                     "--precision", "float32", "--out", str(report)])
+    analyze_e.main()
+    assert "Precision of the fitted CSFs: float32" in report.read_text()
 
 
 def test_a_complete_run_is_skipped(pipeline, capsys):

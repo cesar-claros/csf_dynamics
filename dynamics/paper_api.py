@@ -7,7 +7,8 @@ run the same way on the HPC and on a laptop, with no fd_shifts configuration.
 
 Hyperparameters that the paper tunes on validation data are fixed here (see
 `paper_scores`). Tuning 23 checkpoints of every run would be slow, and the random
-search would break the determinism gate G3.
+search would break the determinism gate G3. The feature CSFs fit in float64 by
+default (protocol amendment A3), and the paper pipeline fits them in float32.
 """
 from __future__ import annotations
 
@@ -90,14 +91,16 @@ def _module(w: torch.Tensor, b: torch.Tensor) -> SimpleNamespace:
 
 def paper_scores(train: torch.Tensor, labels: torch.Tensor,
                  logits_train: torch.Tensor, w: torch.Tensor, b: torch.Tensor,
-                 evaluation: torch.Tensor, logits: torch.Tensor, n_classes: int
+                 evaluation: torch.Tensor, logits: torch.Tensor, n_classes: int,
+                 precision: str = "float64"
                  ) -> tuple[dict[str, np.ndarray], dict[str, str]]:
     """The 21 CSFs of the paper code that need no gradient training.
 
     A higher score means more confidence, as in the paper pipeline. The logit-only
     scores use float64, so that a saturated softmax does not create ties. The
-    feature scores use float32, as in the paper pipeline. A CSF that raises an error
-    gets NaN scores, and the error text is returned.
+    feature scores use `precision`: float32 is the paper pipeline's precision, and
+    float64 removes the rounding noise of the float32 matrix decompositions. A CSF
+    that raises an error gets NaN scores, and the error text is returned.
 
     Returns:
         Scores per CSF on the rows of `evaluation`, and the error text per failed CSF.
@@ -121,6 +124,9 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
     )
     from src.csfs.entropy_funcs import generalized_entropy, renyi_entropy
 
+    dtype = {"float32": torch.float32, "float64": torch.float64}[precision]
+    train, logits_train, evaluation, logits, w, b = (
+        tensor.to(dtype) for tensor in (train, logits_train, evaluation, logits, w, b))
     module, cf = _module(w, b), _config(n_classes)
     logits64 = logits.double()
     softmax64 = torch.softmax(logits64, dim=1)
@@ -212,16 +218,21 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
     }
     scores: dict[str, np.ndarray] = {}
     errors: dict[str, str] = {}
-    for name in PAPER_CSFS:
-        torch.manual_seed(0)
-        np.random.seed(0)
-        try:
-            values = recipes[name]()
-            scores[name] = np.asarray(torch.as_tensor(values).detach().cpu(),
-                                      dtype=np.float64).ravel()
-        except Exception as error:  # noqa: BLE001 - one CSF must not stop the run
-            scores[name] = np.full(len(evaluation), np.nan)
-            errors[name] = f"{type(error).__name__}: {error}"
+    previous = torch.get_default_dtype()
+    torch.set_default_dtype(dtype)  # the paper classes create tensors of this type
+    try:
+        for name in PAPER_CSFS:
+            torch.manual_seed(0)
+            np.random.seed(0)
+            try:
+                values = recipes[name]()
+                scores[name] = np.asarray(torch.as_tensor(values).detach().cpu(),
+                                          dtype=np.float64).ravel()
+            except Exception as error:  # noqa: BLE001 - one CSF must not stop the run
+                scores[name] = np.full(len(evaluation), np.nan)
+                errors[name] = f"{type(error).__name__}: {error}"
+    finally:
+        torch.set_default_dtype(previous)
     return scores, errors
 
 

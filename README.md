@@ -20,7 +20,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/run_stage.py` | Trains and evaluates the runs of a stage (HPC). |
 | `dynamics/analyze_e.py` | Stage E gates, rosters, convergence, design-regime check, and analyses E1 to E7 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
-| `requirements-hpc.txt` | The two packages that the x9 container lacks, with exact versions. |
+| `requirements-hpc.txt` | The packages that an x9 image built before 2026-11-10 lacks, with exact versions. |
 
 ## Local setup
 
@@ -52,22 +52,18 @@ wget https://s3.amazonaws.com/fast-ai-imageclas/imagewoof2-160.tgz && tar xzf im
 
 ## HPC runs
 
-Run these from `code/` inside the x9 container (`x9_imagenet.sif`: Python 3.12, torch 2.6.0+cu124, torchvision 0.21.0+cu124; definition in `Systematic_OOD/container/x9/`). The runs do not need `fd_shifts` or its `.env` file.
+Run these from the repository folder inside the x9 container (`x9_imagenet.sif`: Python 3.12, torch 2.6.0+cu124, torchvision 0.21.0+cu124; definition in `Systematic_OOD/container/x9/`). The runs do not need `fd_shifts` or its `.env` file.
 
-The x9 container has no `torch-pca` and no `torchmetrics`, and the paper's CSF classes import both. Install them once into a folder outside the container. `--no-deps` keeps pip away from the container's torch:
+The paper's CSF classes import `torch-pca` and `torchmetrics`. An image built from the x9 definition on or after 2026-11-10 has both. An older x9 image lacks them. For an older image, install them once into a folder outside the container and add that folder to `PYTHONPATH`. `--no-deps` keeps pip away from the container's torch:
 
 ```bash
-export DYN_ENV=/path/to/csf_dynamics_env
+python -m pip install --no-deps --target /path/to/csf_dynamics_env -r requirements-hpc.txt
 ```
 
-```bash
-python -m pip install --no-deps --target "$DYN_ENV" -r requirements-hpc.txt
-```
-
-Set the paths in every new shell:
+Set the paths in every new shell. Keep the output folder outside the repository folder:
 
 ```bash
-export PYTHONPATH="$DYN_ENV" DYN_ROOT=/path/to/csf_dynamics_runs IMAGENETTE_DIR=/path/to/imagenette2-160 IMAGEWOOF_DIR=/path/to/imagewoof2-160 TEXTURES_DIR=/path/to/dtd
+export DYN_ROOT=/path/to/csf_dynamics_runs IMAGENETTE_DIR=/path/to/imagenette2-160 IMAGEWOOF_DIR=/path/to/imagewoof2-160 TEXTURES_DIR=/path/to/dtd
 ```
 
 Check the environment. This prints the versions and then `ok`:
@@ -100,7 +96,13 @@ Gate G3, a second extraction of 3 checkpoints of each seed-0 main run:
 nohup python -m dynamics.run_stage --stage e_main --recheck --out-root "$DYN_ROOT" --imagenette-dir "$IMAGENETTE_DIR" --imagewoof-dir "$IMAGEWOOF_DIR" --textures-dir "$TEXTURES_DIR" > dyn_recheck.log 2>&1 &
 ```
 
-Run one command at a time on a GPU. A command can restart: it skips complete runs, resumes a stopped training from its last epoch, and skips evaluated checkpoints. Each run folder `$DYN_ROOT/runs/<run>/` holds `checkpoints/` (about 1 GB), `results/` (one JSON file per checkpoint), `train_log.csv`, `meta.json`, and `manifest.json`.
+Run one command at a time on a GPU. A command can restart: it skips complete runs, resumes a stopped training from its last epoch, and skips evaluated checkpoints. Each run folder `$DYN_ROOT/runs/<run>/` holds `checkpoints/` (about 1 GB), `results_f64/` (one JSON file per checkpoint), `train_log.csv`, `meta.json`, and `manifest.json`.
+
+To evaluate existing runs again without training, add `--skip-train`. This is how the Stage E runs get their float64 results:
+
+```bash
+nohup bash -c "python -m dynamics.run_stage --stage e_main --skip-train --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR && python -m dynamics.run_stage --stage e_main --recheck --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR && python -m dynamics.run_stage --stage e_heldout --skip-train --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR" > dyn_stage_e_f64.log 2>&1 &
+```
 
 Pack the results without the checkpoints:
 
@@ -131,8 +133,8 @@ python -m dynamics.run_stage --only A_seed0 --epochs 2 --image-size 64 --limit 4
 These were fixed on 2026-11-10, before any run. The protocol records them.
 
 - **No tuning of CSF hyperparameters.** The paper pipeline tunes some CSFs on validation data. Here they are fixed: GEN and REN use gamma 0.1 and all classes, NNGuide uses 10% of the training features and 10 neighbors, NCI uses alpha 0.003, PCA RecError keeps 90% of the variance, KPCA RecError uses 200 landmarks and an RBF kernel with gamma 0.2, and MLS, Energy, and GradNorm use temperature 1.
-- **Precision.** The logit-only CSFs run in float64, so that a saturated softmax does not create ties. The feature CSFs run in float32, as in the paper pipeline. The descriptors run in float64.
-- **Two rosters (amendment A1).** 10 CSFs need no fit, and 13 fit statistics of the training features. The analysis reports the no-fit roster and the full roster. Before a run converges, the fitted CSFs are outside their design regime, and the no-fit roster is the reference. A run has converged at the first checkpoint whose validation accuracy is within 1 point of its final value.
+- **Precision (amendment A3).** All CSFs and descriptors run in float64. The paper pipeline fits its feature CSFs in float32. On the Stage E runs, those float32 fits failed gate G3: a second extraction of identical features changed the AUROC of 7 CSFs. `--precision float32` still exists and writes to `results/`. The default writes to `results_f64/`.
+- **Two rosters (amendments A1 and A2).** 10 CSFs need no fit, and 13 fit statistics of the training features. The analysis reports the no-fit roster and the full roster. On an unconverged checkpoint, the fitted CSFs are outside their design regime, and the no-fit roster is the reference. A checkpoint is converged if its own validation accuracy is at most 1 point below the final value of its run (amendment A2). So a checkpoint inside a training instability is not converged.
 - **Epoch 0** is the random start. The analysis reports it and keeps it out of the roster rule and the regret tables.
 - **A resumed training run** has the same data order as an uninterrupted run, but not the same augmentation draws.
 - **Environment.** The HPC runs use the x9 container, not the paper container (torch 1.13.1, Python 3.10). The tests pass with torch 2.6.0 on Python 3.12, with numpy 1.26 and with numpy 2.5.

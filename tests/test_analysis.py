@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from dynamics import analyze_e
-from dynamics.config import PENULTIMATE, RunSpec
+from dynamics.config import PENULTIMATE, RunSpec, results_folder
 from dynamics.descriptors import PLACEMENT
 from dynamics.paper_api import NC_METRICS
 from dynamics.scores import ALL_CSFS, NO_FIT_CSFS
@@ -72,20 +72,20 @@ def results(tmp_path_factory: pytest.TempPathFactory) -> Path:
                 for held in range(4)] + [RunSpec("C1", 0)])
     for spec in specs:
         folder = root / "runs" / spec.name
-        (folder / "results").mkdir(parents=True)
+        (folder / results_folder()).mkdir(parents=True)
         for epoch in EPOCHS:
             broken = "pNML" if (spec.name, epoch) == ("B_seed1", 2) else None
             if (spec.name, epoch) == ("A_seed0", 0):
                 broken = "GradNorm"
             out = fake_epoch(spec, epoch, rng, broken)
-            (folder / "results" / f"epoch_{epoch:03d}.json").write_text(
+            (folder / results_folder() / f"epoch_{epoch:03d}.json").write_text(
                 json.dumps(out))
             if spec.name == "A_seed0" and epoch == 4:
-                (folder / "results_recheck").mkdir()
+                (folder / results_folder(recheck=True)).mkdir()
                 for row in out["metrics"]:
                     if row["csf"] == "KPCA_RecError":
                         row["auroc"] += 0.01
-                (folder / "results_recheck" / "epoch_004.json").write_text(
+                (folder / results_folder(recheck=True) / "epoch_004.json").write_text(
                     json.dumps(out))
         (folder / "manifest.json").write_text(json.dumps({
             "imagenette": {"train": {"n1": 5, "n2": 5}, "val": {"n1": 2, "n2": 2}},
@@ -93,12 +93,14 @@ def results(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return root
 
 
-def load(results: Path, tag: str = "results") -> analyze_e.Tables:
-    return analyze_e.stage_e_only(analyze_e.read_runs(results, tag))
+def load(results: Path, recheck: bool = False) -> analyze_e.Tables:
+    return analyze_e.stage_e_only(
+        analyze_e.read_runs(results, results_folder(recheck=recheck)))
 
 
 def test_runs_of_other_stages_are_left_out(results):
-    assert "C1_seed0" in set(analyze_e.read_runs(results).metrics["run"])
+    everything = analyze_e.read_runs(results, results_folder())
+    assert "C1_seed0" in set(everything.metrics["run"])
     tables = load(results)
     for frame in vars(tables).values():
         assert "C1_seed0" not in set(frame["run"])
@@ -107,7 +109,7 @@ def test_runs_of_other_stages_are_left_out(results):
 
 def test_gates_and_roster(results):
     tables = load(results)
-    recheck = load(results, "results_recheck")
+    recheck = load(results, recheck=True)
     manifest = json.loads((results / "runs" / "A_seed0" / "manifest.json")
                           .read_text())
     table, unstable = analyze_e.gates(tables, recheck, manifest)
@@ -149,24 +151,27 @@ def test_stand_ins_follow_their_target(results):
     assert set(subsets["classes"]) == {1, 2, 3}
 
 
-def test_convergence_is_the_first_checkpoint_near_the_final_accuracy():
+def test_a_checkpoint_is_converged_by_its_own_validation_accuracy():
     clock = pd.DataFrame({
         "run": ["r"] * 5 + ["s"] * 3, "epoch": [0, 1, 2, 3, 4, 0, 1, 2],
-        "val_accuracy": [0.1, 0.895, 0.80, 0.90, 0.90, 0.2, 0.5, 0.505]})
-    out = analyze_e.convergence_epochs(clock)
-    assert out["r"] == 1, "a later dip does not move the convergence epoch"
-    assert out["s"] == 1
-    assert analyze_e.is_converged(["r", "r", "s"], [0, 3, 2], out).tolist() == [
-        False, True, True]
+        "val_accuracy": [0.1, 0.895, 0.80, 0.92, 0.90, 0.2, 0.5, 0.505]})
+    converged = analyze_e.converged_checkpoints(clock)
+    assert converged["r"].to_dict() == {0: False, 1: True, 2: False, 3: True, 4: True}
+    assert converged["s"].to_dict() == {0: False, 1: True, 2: True}
+    assert analyze_e.convergence_epochs(converged).to_dict() == {"r": 1, "s": 1}
+    disturbed = analyze_e.disturbed_checkpoints(converged)
+    assert disturbed.to_dict("records") == [{"run": "r", "epoch": 2}]
+    assert analyze_e.is_converged(["r", "r", "s", "x"], [2, 3, 2, 1],
+                                  converged).tolist() == [False, True, True, False]
 
 
 def test_no_fit_roster_and_its_cost(results):
     tables = load(results)
     kept, _ = analyze_e.roster(tables, set())
     points = analyze_e.wide(tables.metrics, kept)
-    convergence = analyze_e.convergence_epochs(
+    convergence = analyze_e.converged_checkpoints(
         analyze_e.clock_table(tables.descriptors))
-    assert set(convergence) == {4}
+    assert set(analyze_e.convergence_epochs(convergence)) == {4}
     no_fit = [csf for csf in kept if csf in NO_FIT_CSFS]
     assert len(no_fit) == 10
     best = analyze_e.fixed_best(points[no_fit], points, convergence)
@@ -185,9 +190,11 @@ def test_design_regime_measures_the_loss_before_convergence():
         names=[*analyze_e.KEYS, "set"])
     points = pd.DataFrame({"MLS": [80.0, 80.0, 80.0], "Maha": [60.0, 70.0, 90.0],
                            "ViM": [50.0, 50.0, 90.0]}, index=index)
-    table = analyze_e.design_regime(points, pd.Series({"A_seed0": 4}))
-    table = table.set_index("csf")
-    assert table.loc["MLS", ["before", "converged", "excess"]].tolist() == [0, 10, -10]
+    converged = pd.Series({("A_seed0", 1): False, ("A_seed0", 2): False,
+                           ("A_seed0", 4): True})
+    table = analyze_e.design_regime(points, converged).set_index("csf")
+    assert table.loc["MLS", ["unconverged", "converged", "excess"]].tolist() == [
+        0, 10, -10]
     assert table.loc["Maha", "excess"] == 15 and table.loc["ViM", "excess"] == 30
     assert table["group"].to_dict() == {"MLS": "no_fit", "Maha": "fit_plain",
                                         "ViM": "fit_absolute"}
@@ -199,7 +206,7 @@ def test_fitted_csfs_use_only_converged_cells_in_link_two(results):
     points = analyze_e.wide(tables.metrics, kept)
     clock = analyze_e.clock_table(tables.descriptors)
     table = analyze_e.link_two(points, tables.placement, clock,
-                               analyze_e.convergence_epochs(clock))
+                               analyze_e.converged_checkpoints(clock))
     cells = table.set_index("csf")["cells"]
     assert cells["MLS"] == 6 * 3 * 5 and cells["Maha"] == 6 * 1 * 5
     assert set(table["group"]) == {"no_fit", "fit_plain", "fit_relative",

@@ -3,7 +3,7 @@ import torch
 
 from dynamics.config import PENULTIMATE
 from dynamics.evaluate import evaluate_features, independent_logit_scores
-from dynamics.paper_api import NC_METRICS, PAPER_CSFS
+from dynamics.paper_api import LOGIT_ONLY, NC_METRICS, PAPER_CSFS
 from dynamics.scores import (
     ALL_CSFS,
     CSF_GROUP,
@@ -81,3 +81,25 @@ def test_evaluate_features_outputs(layers):
     assert [row["name"] for row in paper] == list(NC_METRICS)
     far = {row["csf"]: row["auroc"] for row in out["metrics"] if row["set"] == "far"}
     assert far["Maha"] > 0.9 and far["kNN"] > 0.9
+
+
+def test_float64_fits_agree_with_float32_and_restore_the_default(layers):
+    features = {name: layers[name] for name in ("train", "val", "far")}
+    args = (features, layers["w"], layers["b"], layers["n_classes"])
+    single = evaluate_features(*args, precision="float32")
+    double = evaluate_features(*args)
+    assert torch.get_default_dtype() == torch.float32
+    assert single["precision"] == "float32" and double["precision"] == "float64"
+    assert double["errors"] == {} and not any(double["nonfinite"].values())
+
+    def aurocs(out):
+        return {(row["set"], row["csf"]): row["auroc"] for row in out["metrics"]}
+
+    # The fixture has 48 dimensions, fewer than NeCo's 100 components. So the NeCo
+    # ratio is 1 up to rounding, and its ranking is rounding noise in any precision.
+    first, second = aurocs(single), aurocs(double)
+    far = [key for key in first if key[0] == "far"]
+    assert max(abs(first[key] - second[key]) for key in far
+               if key[1] != "NeCo") < 0.02
+    for csf in LOGIT_ONLY:
+        assert first[("far", csf)] == second[("far", csf)]

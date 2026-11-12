@@ -68,14 +68,16 @@ def extra_scores(train: torch.Tensor, evaluation: torch.Tensor,
 def all_scores(train: torch.Tensor, labels: torch.Tensor, logits_train: torch.Tensor,
                w: torch.Tensor, b: torch.Tensor, evaluation: torch.Tensor,
                logits: torch.Tensor, n_classes: int,
-               device: torch.device | None = None
+               device: torch.device | None = None, precision: str = "float64"
                ) -> tuple[dict[str, np.ndarray], dict[str, str]]:
     """Scores of every CSF on the rows of `evaluation`. Higher means more confident.
+
+    `precision` is the precision of the paper's feature CSFs (see `paper_scores`).
 
     Returns:
         Scores per CSF, and the error text of each paper CSF that failed.
     """
     scores, errors = paper_scores(train, labels, logits_train, w, b, evaluation,
-                                  logits, n_classes)
+                                  logits, n_classes, precision)
     scores.update(extra_scores(train, evaluation, device))
     return scores, errors

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import torch
 
 from dynamics.config import (
@@ -7,6 +8,7 @@ from dynamics.config import (
     RunSpec,
     checkpoint_epochs,
     parse_run,
+    results_folder,
 )
 from dynamics.data import (
     ImageList,
@@ -35,6 +37,15 @@ def test_run_names_round_trip():
     for spec in (RunSpec("A", 0), RunSpec("C2", 7), RunSpec("B", 0, 9)):
         assert parse_run(spec.name) == spec
     assert RunSpec("B", 0, 9).name == "B_seed0_hold9"
+
+
+def test_each_precision_has_its_own_results_folder():
+    assert results_folder() == "results_f64"
+    assert results_folder("float32") == "results"
+    assert results_folder("float32", recheck=True) == "results_recheck"
+    assert results_folder("float64", recheck=True) == "results_f64_recheck"
+    with pytest.raises(ValueError):
+        results_folder("float16")
 
 
 def test_checkpoint_epochs_of_a_short_run():
