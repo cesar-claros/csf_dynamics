@@ -20,7 +20,6 @@ from torch.utils.data import DataLoader, Sampler
 
 from dynamics.config import (
     BATCH_SIZE,
-    EPOCHS,
     IMAGE_SIZE,
     MOMENTUM,
     RECIPES,
@@ -52,14 +51,23 @@ class EpochSampler(Sampler):
 
 
 def learning_rate(step: int, steps_per_epoch: int, epochs: int, peak: float,
-                  warmup_epochs: int = WARMUP_EPOCHS) -> float:
-    """Linear warm-up to the peak, then cosine decay to 0 at the last step."""
+                  warmup_epochs: int = WARMUP_EPOCHS, floor: float = 0.0,
+                  decay_epochs: int | None = None) -> float:
+    """Linear warm-up to the peak, cosine decay to the floor, then the floor.
+
+    The decay ends at epoch `decay_epochs`, or at the last epoch if that is None or
+    later than the run. With the default floor of 0 and no `decay_epochs`, this is
+    a cosine decay to 0 at the last step.
+    """
     warm = warmup_epochs * steps_per_epoch
-    total = epochs * steps_per_epoch
+    end = min(epochs if decay_epochs is None else decay_epochs, epochs)
+    total = end * steps_per_epoch
     if step < warm:
         return peak * (step + 1) / warm
+    if step >= total:
+        return floor
     progress = (step - warm) / max(1, total - warm)
-    return 0.5 * peak * (1 + math.cos(math.pi * progress))
+    return floor + 0.5 * (peak - floor) * (1 + math.cos(math.pi * progress))
 
 
 def save_atomic(payload: dict, path: Path) -> None:
@@ -70,7 +78,7 @@ def save_atomic(payload: dict, path: Path) -> None:
 
 
 def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.device,
-              epochs: int = EPOCHS, workers: int = 8, limit: int | None = None,
+              epochs: int | None = None, workers: int = 8, limit: int | None = None,
               image_size: int = IMAGE_SIZE, batch_size: int = BATCH_SIZE) -> None:
     """Train one run. Does nothing if the run is already complete."""
     folder = run_dir(out_root, spec.name)
@@ -87,7 +95,8 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
     model = build_model(len(classes)).to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=recipe.lr, momentum=MOMENTUM,
                                 weight_decay=recipe.weight_decay)
-    use_amp = device.type == "cuda"
+    epochs = recipe.epochs if epochs is None else epochs
+    use_amp = device.type == "cuda" and recipe.amp
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     sampler = EpochSampler(len(dataset), spec.seed)
     loader = DataLoader(dataset, batch_size=batch_size, sampler=sampler,
@@ -97,10 +106,10 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
     kept = set(checkpoint_epochs(epochs))
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "meta.json").write_text(json.dumps({
-        "run": spec.name, "recipe": spec.recipe, "seed": spec.seed,
+        **vars(recipe), "run": spec.name, "recipe": spec.recipe, "seed": spec.seed,
         "held_out": spec.held_out, "classes": classes, "epochs": epochs,
         "image_size": image_size, "batch_size": batch_size, "limit": limit,
-        "train_images": len(dataset), **vars(recipe)}, indent=2))
+        "train_images": len(dataset), "mixed_precision": use_amp}, indent=2))
 
     def checkpoint(epoch: int) -> None:
         state = {key: value.cpu() for key, value in model.state_dict().items()}
@@ -137,7 +146,9 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
         lr = recipe.lr
         for index, (images, labels) in enumerate(loader):
             lr = learning_rate((epoch - 1) * steps_per_epoch + index,
-                               steps_per_epoch, epochs, recipe.lr)
+                               steps_per_epoch, epochs, recipe.lr,
+                               floor=recipe.lr_floor,
+                               decay_epochs=recipe.decay_epochs)
             for group in optimizer.param_groups:
                 group["lr"] = lr
             images, labels = images.to(device), labels.to(device)

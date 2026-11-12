@@ -27,6 +27,7 @@ from dynamics.config import (
     parse_run,
     results_folder,
 )
+from dynamics.descriptors import PLACEMENT
 from dynamics.scores import ALL_CSFS, CSF_GROUP, NO_FIT_CSFS
 
 HERE = Path(__file__).resolve().parent
@@ -474,8 +475,13 @@ def dummies(values: pd.Series) -> np.ndarray:
 
 
 def placement_wide(placement: pd.DataFrame) -> pd.DataFrame:
-    """Penultimate-layer placement descriptors and the margin ratio, per cell."""
+    """Penultimate-layer placement descriptors and the margin ratio, per cell.
+
+    The convention descriptors of Stage D are left out, so that this table is the
+    same for results with and without them.
+    """
     kept = placement[placement["layer"].isin([PENULTIMATE, "logits"])
+                     & placement["name"].isin([*PLACEMENT, "margin_ratio"])
                      & (placement["epoch"] >= 1) & (placement["held_out"] < 0)]
     return kept.set_index(KEYS + ["set", "name"])["value"].unstack("name")
 

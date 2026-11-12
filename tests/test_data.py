@@ -32,8 +32,11 @@ def test_stages_match_the_protocol():
     assert len(STAGES["e_main"]) == 10
     assert len(STAGES["e_heldout"]) == 20
     assert len(STAGES["c"]) == 15
-    names = [spec.name for stage in STAGES.values() for spec in stage]
-    assert len(names) == len(set(names))
+    assert len(STAGES["d"]) == 25 and set(STAGES["d_first"]) < set(STAGES["d"])
+    for stage in STAGES.values():
+        assert len({spec.name for spec in stage}) == len(stage)
+    assert not {spec.name for spec in STAGES["d"]} & {
+        spec.name for name in ("e_main", "e_heldout", "c") for spec in STAGES[name]}
 
 
 def test_run_names_round_trip():
@@ -55,6 +58,9 @@ def test_checkpoint_epochs_of_a_short_run():
     assert checkpoint_epochs(4) == (0, 1, 2, 3, 4)
     assert checkpoint_epochs(5) == (0, 1, 2, 3, 4, 5)
     assert checkpoint_epochs(200) == CHECKPOINT_EPOCHS
+    long = checkpoint_epochs(500)
+    assert len(long) == 38 and long[:23] == CHECKPOINT_EPOCHS
+    assert long[23:] == tuple(range(220, 501, 20))
 
 
 def test_thin_keeps_evenly_spaced_items():

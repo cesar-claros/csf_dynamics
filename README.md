@@ -2,24 +2,27 @@
 
 This project asks whether quantities computed from ID data alone can tell where unseen inputs land relative to the ID classes, well enough to choose a confidence scoring function (CSF) without OOD data. It starts with a pilot: ResNet-18 models trained from scratch on Imagenette, with checkpoints over the epochs.
 
-The protocol, with the gates and the decision rule, is in `../documentation/imagenette_dynamics_protocol_2026-11-10.md`. The paper code is a read-only submodule at `external/ood_systematic`, pinned to commit `563fb63`. This project imports its CSF and NC classes and does not copy or edit them.
+The protocol, with the gates and the decision rule, is in `../documentation/imagenette_dynamics_protocol_2026-11-10.md`. Stage D has its own protocol, `../documentation/time_and_collapse_protocol_2026-11-12.md`. The paper code is a read-only submodule at `external/ood_systematic`, pinned to commit `563fb63`. This project imports its CSF and NC classes and does not copy or edit them.
 
 ## Contents
 
 | Path | Purpose |
 |---|---|
-| `dynamics/config.py` | Fixed values of the protocol: checkpoints, recipes, stages. |
+| `dynamics/config.py` | Fixed values of the protocols: checkpoints, recipes (A, B, C1 to C3, D1 to D5), stages. |
 | `dynamics/data.py` | ID splits, external sets, and the ID-only stand-in sets. |
 | `dynamics/model.py` | ResNet-18 and the pooled features of its four stages. |
 | `dynamics/train.py` | Trains one run and keeps its checkpoints (HPC). |
 | `dynamics/paper_api.py` | Calls the paper's 21 CSFs and 8 NC metrics on our features. |
 | `dynamics/scores.py` | All 23 CSFs: the paper's 21, kNN distance, and feature norm. Also the CSF groups of amendment A1. |
 | `dynamics/metrics.py` | AUROC, FPR@95, AURC, and AUGRC. |
-| `dynamics/descriptors.py` | ID-only descriptors and placement descriptors. |
+| `dynamics/descriptors.py` | ID-only descriptors, placement descriptors, and the three metric conventions of Stage D. |
 | `dynamics/evaluate.py` | Evaluates every checkpoint of a run (HPC). |
 | `dynamics/run_stage.py` | Trains and evaluates the runs of a stage (HPC). |
 | `dynamics/analyze_e.py` | Stage E gates, rosters, convergence, design-regime check, and analyses E1 to E7 (local). |
 | `dynamics/analyze_step0.py` | Step 0: the two rules of amendment A4 on more OOD sets and an earlier layer (local). |
+| `dynamics/analyze_checks.py` | Four checks on the Stage E and step 0 results, without new runs (local). |
+| `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
+| `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
 | `requirements-hpc.txt` | The packages that an x9 image built before 2026-11-10 lacks, with exact versions. |
 
@@ -129,6 +132,50 @@ Pack the results without the checkpoints:
 cd "$DYN_ROOT" && tar czf dyn_stage_e.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs
 ```
 
+### Stage D: time, collapse, and conventions
+
+Stage D trains 25 new runs: 5 arms (D1 to D5) with 5 seeds each. Each run has 500 epochs and 38 checkpoints. The learning rate falls to 0.01 by epoch 100 and then stays constant. Each run uses the step 0 evaluation, so set `OOD` as above and use exactly the same set names.
+
+First, 2 runs (`D1_seed0` and `D2_seed0`). Read only their training logs and gate I, to find a schedule problem before the other 23 runs:
+
+```bash
+nohup python -m dynamics.run_stage --stage d_first --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_d_first.log 2>&1 &
+```
+
+Check gate I for these runs. This prints the first checkpoint with 100% accuracy on the training set without augmentation (`t0`), and the accuracy at each checkpoint from epoch 60. The training log does not show this value for D2, because its accuracy column uses augmented images:
+
+```bash
+python -m dynamics.interpolation --out-root $DYN_ROOT --runs D1_seed0 D2_seed0
+```
+
+Gate I needs `t0` of 200 or less for `D2_seed0`. If the value is larger or the run never reaches 100%, stop and report the listing. The protocol then lowers the floor of the learning rate by an amendment.
+
+Then the full stage. It skips the 2 complete runs:
+
+```bash
+nohup python -m dynamics.run_stage --stage d --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_d.log 2>&1 &
+```
+
+Gate G3, a second extraction of 3 checkpoints of the seed-0 run of each arm:
+
+```bash
+nohup python -m dynamics.run_stage --stage d --recheck --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_d_recheck.log 2>&1 &
+```
+
+Pack the Stage D results only:
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_d.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/D*
+```
+
+Local analysis. The report goes to `dynamics/outputs/stage_d_report.md`, and the tables go to `dynamics/outputs/stage_d/`:
+
+```bash
+uv run python -m dynamics.analyze_d --results-root dyn_results
+```
+
+A question whose gate fails gets the verdict "not decided". Each run needs about 1.7 GB for its 38 checkpoints.
+
 ## Local analysis
 
 Extract the archive into `dyn_results/`, so that `dyn_results/runs/` exists. Then:
@@ -154,6 +201,7 @@ These were fixed on 2026-11-10, before any run. The protocol records them.
 - **No tuning of CSF hyperparameters.** The paper pipeline tunes some CSFs on validation data. Here they are fixed: GEN and REN use gamma 0.1 and all classes, NNGuide uses 10% of the training features and 10 neighbors, NCI uses alpha 0.003, PCA RecError keeps 90% of the variance, KPCA RecError uses 200 landmarks and an RBF kernel with gamma 0.2, and MLS, Energy, and GradNorm use temperature 1.
 - **Precision (amendment A3).** All CSFs and descriptors run in float64. The paper pipeline fits its feature CSFs in float32. On the Stage E runs, those float32 fits failed gate G3: a second extraction of identical features changed the AUROC of 7 CSFs. `--precision float32` still exists and writes to `results/`. The default writes to `results_f64/`.
 - **Two rosters (amendments A1 and A2).** 10 CSFs need no fit, and 13 fit statistics of the training features. The analysis reports the no-fit roster and the full roster. On an unconverged checkpoint, the fitted CSFs are outside their design regime, and the no-fit roster is the reference. A checkpoint is converged if its own validation accuracy is at most 1 point below the final value of its run (amendment A2). So a checkpoint inside a training instability is not converged.
+- **Stage D (2026-11-12).** The five arms differ from D1 in one setting each: D2 adds augmentation, D3 adds label smoothing 0.1, D4 lowers the weight decay to 5e-5, and D5 trains without mixed precision. All five use the same schedule. `meta.json` of each run records the recipe. Without `--epochs`, a run uses the length of its recipe (200 for A, B, and C; 500 for D).
 - **Epoch 0** is the random start. The analysis reports it and keeps it out of the roster rule and the regret tables.
 - **A resumed training run** has the same data order as an uninterrupted run, but not the same augmentation draws.
 - **Environment.** The HPC runs use the x9 container, not the paper container (torch 1.13.1, Python 3.10). The tests pass with torch 2.6.0 on Python 3.12, with numpy 1.26 and with numpy 2.5.

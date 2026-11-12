@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 CHECKPOINT_EPOCHS = (0, 1, 2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 40, 50, 60, 80,
                      100, 120, 140, 160, 180, 200)
@@ -42,12 +43,27 @@ RESERVED_SETS = ("train", "val", "blend", "shuffle", "imagewoof", "textures",
 
 @dataclass(frozen=True)
 class Recipe:
-    """Training recipe. The regimes and the Stage C recipes differ only here."""
+    """Training recipe.
+
+    The learning rate warms up to `lr`, follows a cosine from `lr` to `lr_floor`
+    until epoch `decay_epochs` (the last epoch if None), and then stays at
+    `lr_floor`. `amp` turns mixed precision on a GPU on or off.
+    """
 
     augment: bool
     weight_decay: float = 5e-4
     label_smoothing: float = 0.0
     lr: float = 0.05
+    epochs: int = EPOCHS
+    lr_floor: float = 0.0
+    decay_epochs: int | None = None
+    amp: bool = True
+
+
+def _long(augment: bool, **changes: Any) -> Recipe:
+    """A Stage D recipe: 500 epochs, cosine to 0.01 at epoch 100, constant tail."""
+    return Recipe(augment=augment, epochs=500, lr_floor=0.01, decay_epochs=100,
+                  **changes)
 
 
 RECIPES = {
@@ -56,6 +72,11 @@ RECIPES = {
     "C1": Recipe(augment=True, weight_decay=5e-5),
     "C2": Recipe(augment=True, label_smoothing=0.1),
     "C3": Recipe(augment=False, lr=0.01),
+    "D1": _long(augment=False),
+    "D2": _long(augment=True),
+    "D3": _long(augment=False, label_smoothing=0.1),
+    "D4": _long(augment=False, weight_decay=5e-5),
+    "D5": _long(augment=False, amp=False),
 }
 
 
@@ -94,6 +115,9 @@ STAGES: dict[str, list[RunSpec]] = {
     "c": ([RunSpec(recipe, seed) for recipe in ("A", "B") for seed in (5, 6, 7)]
           + [RunSpec(recipe, seed) for recipe in ("C1", "C2", "C3")
              for seed in range(3)]),
+    "d_first": [RunSpec("D1", 0), RunSpec("D2", 0)],
+    "d": [RunSpec(recipe, seed) for recipe in ("D1", "D2", "D3", "D4", "D5")
+          for seed in range(5)],
 }
 
 
@@ -140,6 +164,11 @@ def checkpoint_path(out_root: Path, name: str, epoch: int) -> Path:
 
 
 def checkpoint_epochs(epochs: int) -> tuple[int, ...]:
-    """Protocol checkpoints up to `epochs`, plus the final epoch."""
-    kept = [epoch for epoch in CHECKPOINT_EPOCHS if epoch <= epochs]
-    return tuple(sorted(set(kept) | {epochs}))
+    """Checkpoints of a run with `epochs` epochs.
+
+    The protocol grid up to its last epoch, then every 20 epochs, and the final
+    epoch. A run of 500 epochs has 38 checkpoints.
+    """
+    kept = {epoch for epoch in CHECKPOINT_EPOCHS if epoch <= epochs}
+    kept |= set(range(CHECKPOINT_EPOCHS[-1] + 20, epochs + 1, 20))
+    return tuple(sorted(kept | {epochs}))

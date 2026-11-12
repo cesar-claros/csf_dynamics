@@ -5,13 +5,17 @@ import torch
 from dynamics.config import LAYERS, PENULTIMATE
 from dynamics.descriptors import (
     CLASS_MEAN_METRICS,
+    CONVENTIONS,
     PLACEMENT,
     class_geometry,
     class_mean_metrics,
     compare,
+    convention_descriptors,
     id_descriptors,
+    inside_share,
     placement_descriptors,
     row_stats,
+    span_basis,
     spectrum,
     summarize,
 )
@@ -117,3 +121,32 @@ def test_placement_descriptors_rows(layers):
     far = {row["name"]: row["value"] for row in rows
            if row["set"] == "far" and row["layer"] == PENULTIMATE}
     assert far["neighbor_ratio"] > 1 and far["class_cosine_gap"] < 0
+
+
+def test_span_basis_and_inside_share():
+    vectors = torch.tensor([[1.0, 0, 0], [2.0, 0, 0], [0, 3.0, 0]])
+    basis = span_basis(vectors)
+    assert basis.shape == (3, 2)
+    points = torch.tensor([[1.0, 1.0, 0], [0, 0, 5.0], [3.0, 0, 4.0]])
+    assert inside_share(points, basis).tolist() == pytest.approx([1.0, 0.0, 0.36])
+
+
+def test_convention_descriptors_on_a_known_geometry():
+    labels = torch.arange(40) % 2
+    means = torch.tensor([[2.0, 0, 0, 0], [0, 2.0, 0, 0]])
+    train = {PENULTIMATE: means[labels], "labels": labels}
+    val = {PENULTIMATE: means[labels[:10]], "labels": labels[:10]}
+    outside = {PENULTIMATE: torch.tensor([[0, 0, 1.0, 0], [0, 0, 0, 1.0]]).repeat(5, 1)}
+    inside = {PENULTIMATE: torch.tensor([[1.0, 1.0, 0, 0]]).repeat(6, 1)}
+    rows = convention_descriptors(train, val, {"outside": outside, "inside": inside},
+                                  np.ones(10, dtype=bool), means, 2)
+    found = {(row["set"], row["name"]): row["value"] for row in rows}
+    assert {name for _, name in found} == set(CONVENTIONS)
+    assert found[("outside", "orthodev")] == pytest.approx(0.0, abs=1e-12)
+    assert found[("outside", "outside_share_gap_raw")] == pytest.approx(1.0)
+    assert found[("outside", "rowspace_share")] == pytest.approx(0.0, abs=1e-12)
+    assert found[("outside", "rowspace_share_gap")] == pytest.approx(-1.0)
+    assert found[("inside", "orthodev")] == pytest.approx(2 ** -0.5)
+    assert found[("inside", "outside_share_gap_raw")] == pytest.approx(0.0, abs=1e-12)
+    assert found[("val", "rowspace_share")] == pytest.approx(1.0)
+    assert np.isnan(found[("id_errors", "orthodev")])

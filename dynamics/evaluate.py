@@ -26,7 +26,11 @@ from dynamics.config import (
     run_dir,
 )
 from dynamics.data import evaluation_sets, manifest
-from dynamics.descriptors import id_descriptors, placement_descriptors
+from dynamics.descriptors import (
+    convention_descriptors,
+    id_descriptors,
+    placement_descriptors,
+)
 from dynamics.metrics import auroc, error_metrics, set_metrics
 from dynamics.model import build_model, extract
 from dynamics.paper_api import NC_METRICS, paper_nc
@@ -132,8 +136,10 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
         "layer_metrics": layer_metrics,
         "layer_errors": layer_errors,
         "descriptors": descriptors,
-        "placement": placement_descriptors(train, val, unseen, correct, n_classes,
-                                           device),
+        "placement": (placement_descriptors(train, val, unseen, correct, n_classes,
+                                            device)
+                      + convention_descriptors(train, val, unseen, correct, w,
+                                               n_classes)),
         "checks": {"g4_max_gap": float(np.nanmax(gaps)) if gaps else float("nan"),
                    "head_gap": head_gap},
         "errors": errors,

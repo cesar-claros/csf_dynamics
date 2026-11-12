@@ -17,6 +17,9 @@ CLASS_MEAN_METRICS = ("var_collapse", "equinorm_uc", "equiangular_uc",
                       "max_equiangular_uc")
 PLACEMENT = ("norm_ratio", "outside_share_gap", "class_cosine_gap",
              "centroid_offset", "neighbor_ratio")
+#: Stage D, question Q3: the same geometry under other conventions.
+CONVENTIONS = ("outside_share_gap_raw", "orthodev", "rowspace_share",
+               "rowspace_share_gap")
 
 
 @dataclass
@@ -237,4 +240,74 @@ def placement_descriptors(train: dict, val: dict, unseen: dict[str, dict],
     if (~correct).any() and correct.any():
         add("id_errors", "logits", {"margin_ratio": float(
             np.median(val_margin[~correct]) / np.median(val_margin[correct]))})
+    return rows
+
+
+def span_basis(vectors: torch.Tensor) -> torch.Tensor:
+    """Orthonormal basis, as columns, of the span of the rows of `vectors`."""
+    _, singular, right = torch.linalg.svd(vectors.double(), full_matrices=False)
+    rank = int((singular > 1e-10 * singular[0]).sum())
+    return right[:rank].T
+
+
+def inside_share(features: torch.Tensor, basis: torch.Tensor) -> torch.Tensor:
+    """Per row, the share of the squared norm that lies inside a subspace."""
+    x = features.double()
+    return (x @ basis).pow(2).sum(dim=1) / x.pow(2).sum(dim=1).clamp_min(1e-24)
+
+
+def convention_descriptors(train: dict, val: dict, unseen: dict[str, dict],
+                           correct: np.ndarray, w: torch.Tensor, n_classes: int
+                           ) -> list[dict]:
+    """Geometry of each unseen set under three conventions without centering.
+
+    All quantities use the penultimate features as the network gives them:
+
+    - `outside_share_gap_raw`: mean share of the energy outside the span of the
+      plain class means, on the unseen set minus on the ID validation set. This is
+      our off-span gap without the centering at the training mean.
+    - `orthodev`: mean over classes of the absolute cosine between the plain class
+      mean and the mean of the set (the fifth collapse property of NECO).
+    - `rowspace_share`: mean share of the energy inside the row space of the
+      classifier (as in GEODE), and `rowspace_share_gap`: the same minus the value
+      on the ID validation set.
+
+    The set `val` holds the reference values of the ID validation set. The set
+    `id_errors` compares the misclassified validation images with the correct ones.
+    """
+    x = train[PENULTIMATE].double()
+    means = torch.stack([x[train["labels"] == c].mean(dim=0)
+                         for c in range(n_classes)])
+    mean_span, row_space = span_basis(means), span_basis(w)
+    unit_means = means / means.norm(dim=1, keepdim=True)
+
+    def summary(features: torch.Tensor) -> dict[str, float]:
+        if len(features) == 0:
+            return dict.fromkeys(("outside", "rowspace", "orthodev"), float("nan"))
+        center = features.double().mean(dim=0)
+        cosines = unit_means @ (center / center.norm().clamp_min(1e-12))
+        return {"outside": float((1 - inside_share(features, mean_span)).mean()),
+                "rowspace": float(inside_share(features, row_space).mean()),
+                "orthodev": float(cosines.abs().mean())}
+
+    rows: list[dict] = []
+
+    def add(name: str, values: dict[str, float]) -> None:
+        rows.extend({"set": name, "layer": PENULTIMATE, "name": key,
+                     "value": float(value)} for key, value in values.items())
+
+    def against(found: dict[str, float], reference: dict[str, float]) -> dict:
+        return {"outside_share_gap_raw": found["outside"] - reference["outside"],
+                "orthodev": found["orthodev"],
+                "rowspace_share": found["rowspace"],
+                "rowspace_share_gap": found["rowspace"] - reference["rowspace"]}
+
+    features = val[PENULTIMATE]
+    reference = summary(features)
+    add("val", {"orthodev": reference["orthodev"],
+                "rowspace_share": reference["rowspace"]})
+    for name, values in unseen.items():
+        add(name, against(summary(values[PENULTIMATE]), reference))
+    mask = torch.as_tensor(correct)
+    add("id_errors", against(summary(features[~mask]), summary(features[mask])))
     return rows

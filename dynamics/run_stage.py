@@ -19,10 +19,10 @@ import torch
 
 from dynamics.config import (
     DEFAULT_PRECISION,
-    EPOCHS,
     EXTRA_LIMIT,
     IMAGE_SIZE,
     PRECISIONS,
+    RECIPES,
     STAGES,
     DataPaths,
     RunSpec,
@@ -68,15 +68,15 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available()
                         else "cpu")
-    parser.add_argument("--epochs", type=int, default=EPOCHS,
-                        help="smoke runs only; the protocol value is the default")
+    parser.add_argument("--epochs", type=int,
+                        help="smoke runs only; the default is the recipe's value")
     parser.add_argument("--image-size", type=int, default=IMAGE_SIZE,
                         help="smoke runs only")
     parser.add_argument("--limit", type=int, help="smoke runs only: images per set")
     args = parser.parse_args()
     if args.stage is None and not args.only:
         parser.error("give --stage or --only")
-    smoke = (args.epochs, args.image_size, args.limit) != (EPOCHS, IMAGE_SIZE, None)
+    smoke = (args.epochs, args.image_size, args.limit) != (None, IMAGE_SIZE, None)
     if not smoke and not (args.imagewoof_dir and args.textures_dir):
         parser.error("protocol runs need --imagewoof-dir and --textures-dir")
     if bool(args.extra_set) != bool(args.suite):
@@ -108,7 +108,8 @@ def main() -> None:
             if args.recheck:
                 if spec.seed == 0 and spec.held_out is None:
                     evaluate_run(spec, paths, out_root, device,
-                                 epochs=recheck_epochs(args.epochs),
+                                 epochs=recheck_epochs(
+                                     args.epochs or RECIPES[spec.recipe].epochs),
                                  precision=args.precision, recheck=True,
                                  suite=args.suite, **shared)
                 continue
