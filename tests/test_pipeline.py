@@ -31,6 +31,9 @@ def pipeline(tiny_data, tmp_path_factory):
     stage("--only", "B_seed0", "--skip-train", "--suite", "step0", "--extra-limit",
           "20", "--extra-set", f"places={extra / 'places'}", "--extra-set",
           f"ssb_hard={extra / 'ssb_hard'}")
+    stage("--only", "B_seed0", "--skip-train", "--suite", "refcheck",
+          "--reference-check", "--extra-limit", "20", "--extra-set",
+          f"places={extra / 'places'}")
     return root, stage
 
 
@@ -97,6 +100,24 @@ def test_suite_adds_sets_and_keeps_the_base_results(out_root, tmp_path, monkeypa
                                      str(out_root), "--out", str(report)])
     analyze_step0.main()
     assert "Rule 1: not decided" in report.read_text()
+
+
+def test_reference_check_writes_its_own_results(out_root, pipeline):
+    folder = out_root / "runs" / "B_seed0"
+    out = json.loads((folder / "results_f64_refcheck" / "epoch_001.json").read_text())
+    rows = out["reference_metrics"]
+    assert {row["reference"] for row in rows} == {"train", "train_small", "heldout"}
+    assert {"places", "imagewoof", "textures"} <= {row["set"] for row in rows}
+    assert out["checks"]["reference_nofit_gap"] == 0.0
+    assert out["checks"]["reference_fit"] + out["checks"]["reference_test"] == 120
+    weights = {row["name"]: row["value"] for row in out["descriptors"]
+               if row["group"] == "weights"}
+    assert weights["conv_norm"] > weights["conv_norm_stage4"] > 0
+    assert {row["group"] for row in out["descriptors"]} >= {"spread", "weights"}
+    base = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
+    assert base["reference_metrics"] == []
+    with pytest.raises(SystemExit):
+        pipeline[1]("--only", "B_seed0", "--skip-train", "--reference-check")
 
 
 def test_extra_sets_need_a_suite_name(pipeline):

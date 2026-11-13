@@ -77,8 +77,9 @@ def test_evaluate_features_outputs(layers):
     assert out["errors"] == {} and not any(out["nonfinite"].values())
     assert out["counts"] == {"val": 200, "far": 200, "train": 600}
     groups = {row["group"] for row in out["descriptors"]}
-    assert groups == {"nc_paper", "clock", "nc", "gap", "spectrum", "norm_angle",
-                      "region", "logits"}
+    assert groups == {"nc_paper", "clock", "nc", "gap", "spread", "spectrum",
+                      "norm_angle", "region", "logits"}
+    assert out["reference_metrics"] == [] and out["reference_errors"] == {}
     paper = [row for row in out["descriptors"] if row["group"] == "nc_paper"]
     assert [row["name"] for row in paper] == list(NC_METRICS)
     far = {row["csf"]: row["auroc"] for row in out["metrics"] if row["set"] == "far"}

@@ -17,6 +17,10 @@ CLASS_MEAN_METRICS = ("var_collapse", "equinorm_uc", "equiangular_uc",
                       "max_equiangular_uc")
 PLACEMENT = ("norm_ratio", "outside_share_gap", "class_cosine_gap",
              "centroid_offset", "neighbor_ratio")
+#: Collapse metrics without a matrix inversion (reference check of 2026-11-12).
+SPREAD = ("cdnv", "trace_ratio", "within_inside_share")
+REFERENCE_SPREAD = ("val_over_train", "val_over_train_inside",
+                    "val_over_train_outside")
 #: Stage D, question Q3: the same geometry under other conventions.
 CONVENTIONS = ("outside_share_gap_raw", "orthodev", "rowspace_share",
                "rowspace_share_gap")
@@ -76,6 +80,54 @@ def class_mean_metrics(features: torch.Tensor, labels: torch.Tensor,
     }
 
 
+def spread_metrics(features: torch.Tensor, labels: torch.Tensor,
+                   n_classes: int) -> dict[str, float]:
+    """Collapse metrics without a matrix inversion, about the class means of a set.
+
+    cdnv is the class-distance normalized variance of Galanti et al.: the mean over
+    the class pairs of (V_c + V_d) / (2 ||mu_c - mu_d||^2), where V_c is the mean
+    squared distance of the rows of a class to its mean. trace_ratio is
+    trace(Sigma_W) / trace(Sigma_B), with the averages of `class_mean_metrics`.
+    within_inside_share is the share of the within-class scatter that lies inside
+    the centered span of the class means.
+    """
+    x = features.double()
+    geometry = class_geometry(x, labels, n_classes)
+    within = x - geometry.means[labels]
+    squared = within.pow(2).sum(dim=1)
+    per_class = torch.stack([squared[labels == c].mean() for c in range(n_classes)])
+    distances = torch.cdist(geometry.means, geometry.means).pow(2)
+    pairs = ~torch.eye(n_classes, dtype=torch.bool)
+    cdnv = ((per_class[:, None] + per_class[None, :]) / (2 * distances))[pairs].mean()
+    total = squared.mean()
+    between = geometry.centered.pow(2).sum() / n_classes
+    inside = (within @ geometry.basis).pow(2).sum(dim=1).mean()
+    return {"cdnv": float(cdnv), "trace_ratio": float(total / between),
+            "within_inside_share": float(inside / total)}
+
+
+def reference_spread(train: torch.Tensor, labels: torch.Tensor, val: torch.Tensor,
+                     val_labels: torch.Tensor, geometry: Geometry
+                     ) -> dict[str, float]:
+    """Spread of the validation rows about the training class means, over the
+    spread of the training rows.
+
+    The three values are the total mean squared distance, its part inside the
+    class-mean span, and its part outside the span. A value above 1 means that the
+    training rows sit closer to their class means than the validation rows do.
+    """
+    def parts(features: torch.Tensor, targets: torch.Tensor
+              ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        within = features.double() - geometry.means[targets]
+        total = within.pow(2).sum(dim=1).mean()
+        inside = (within @ geometry.basis).pow(2).sum(dim=1).mean()
+        return total, inside, total - inside
+
+    held_out, reference = parts(val, val_labels), parts(train, labels)
+    return {name: float(a / b)
+            for name, a, b in zip(REFERENCE_SPREAD, held_out, reference)}
+
+
 def spectrum(features: torch.Tensor) -> dict[str, float]:
     """Effective rank and decay rate of the eigenvalues of the total covariance.
 
@@ -123,6 +175,12 @@ def id_descriptors(train: dict, val: dict, n_classes: int,
         on_val = class_mean_metrics(v, val_labels, n_classes)["var_collapse"]
         add("gap", "var_collapse_val_over_train", layer,
             on_val / own["var_collapse"] if own["var_collapse"] > 0 else np.nan)
+        for part, block, targets in (("train", x, labels), ("val", v, val_labels)):
+            for name, value in spread_metrics(block, targets, n_classes).items():
+                add("spread", f"{name}_{part}", layer, value)
+        for name, value in reference_spread(x, labels, v, val_labels,
+                                            geometry).items():
+            add("spread", name, layer, value)
         for name, value in spectrum(x).items():
             add("spectrum", name, layer, value)
         z = x - geometry.global_mean

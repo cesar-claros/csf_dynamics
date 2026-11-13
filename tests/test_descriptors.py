@@ -14,9 +14,11 @@ from dynamics.descriptors import (
     id_descriptors,
     inside_share,
     placement_descriptors,
+    reference_spread,
     row_stats,
     span_basis,
     spectrum,
+    spread_metrics,
     summarize,
 )
 from dynamics.paper_api import paper_nc
@@ -102,7 +104,11 @@ def test_id_descriptors_cover_every_layer(layers):
         assert ("norm_angle", "class_cosine_val", layer) in names
     assert ("region", "neighbor_radius_ratio", PENULTIMATE) in names
     assert ("logits", "margin_val", "logits") in names
-    assert len(rows) == 4 * 11 + 3 + 2
+    for layer in LAYERS:
+        for name in ("cdnv_train", "cdnv_val", "trace_ratio_train",
+                     "within_inside_share_val", "val_over_train_outside"):
+            assert ("spread", name, layer) in names
+    assert len(rows) == 4 * 20 + 3 + 2
     finite = [row for row in rows if row["name"] != "decay_rate"]
     assert all(np.isfinite(row["value"]) for row in finite)
 
@@ -150,3 +156,33 @@ def test_convention_descriptors_on_a_known_geometry():
     assert found[("inside", "outside_share_gap_raw")] == pytest.approx(0.0, abs=1e-12)
     assert found[("val", "rowspace_share")] == pytest.approx(1.0)
     assert np.isnan(found[("id_errors", "orthodev")])
+
+
+def two_classes() -> tuple[torch.Tensor, torch.Tensor]:
+    """Two classes on the first axis; each has spread 1 on it and spread 3 off it."""
+    offsets = torch.tensor([[1.0, 0, 0], [-1.0, 0, 0], [0, 3.0, 0], [0, -3.0, 0]])
+    means = torch.tensor([[-2.0, 0, 0], [2.0, 0, 0]])
+    rows = torch.cat([means[0] + offsets, means[1] + offsets])
+    return rows, torch.tensor([0] * 4 + [1] * 4)
+
+
+def test_spread_metrics_on_a_known_geometry():
+    rows, labels = two_classes()
+    found = spread_metrics(rows, labels, 2)
+    # V_c = (1 + 1 + 9 + 9) / 4 = 5, and the squared distance of the means is 16.
+    assert found["cdnv"] == pytest.approx(10 / 32)
+    assert found["trace_ratio"] == pytest.approx(5 / 4)
+    assert found["within_inside_share"] == pytest.approx(0.5 / 5)
+
+
+def test_reference_spread_separates_inside_from_outside():
+    rows, labels = two_classes()
+    geometry = class_geometry(rows, labels, 2)
+    same = reference_spread(rows, labels, rows, labels, geometry)
+    assert all(value == pytest.approx(1.0) for value in same.values())
+    wider = rows.clone()
+    wider[:, 1] *= 2          # only the part outside the class-mean span grows
+    found = reference_spread(rows, labels, wider, labels, geometry)
+    assert found["val_over_train_inside"] == pytest.approx(1.0)
+    assert found["val_over_train_outside"] == pytest.approx(4.0)
+    assert found["val_over_train"] == pytest.approx((0.5 + 18) / 5)

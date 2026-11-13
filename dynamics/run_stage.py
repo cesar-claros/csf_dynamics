@@ -65,6 +65,9 @@ def main() -> None:
                         help="name of an evaluation with extra sets, for example "
                              "step0; its results get their own folder")
     parser.add_argument("--keep-features", action="store_true")
+    parser.add_argument("--reference-check", action="store_true",
+                        help="also fit every CSF on a training subset and on one "
+                             "half of the validation set; needs --suite")
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available()
                         else "cpu")
@@ -82,6 +85,9 @@ def main() -> None:
     if bool(args.extra_set) != bool(args.suite):
         parser.error("give --extra-set and --suite together, so that results with "
                      "extra sets stay apart from the base results")
+    if args.reference_check and not args.suite:
+        parser.error("give --reference-check with --suite, so that its results "
+                     "stay apart from the earlier results")
     extra = []
     for item in args.extra_set:
         name, separator, folder = item.partition("=")
@@ -118,7 +124,8 @@ def main() -> None:
             if not args.skip_eval:
                 evaluate_run(spec, paths, out_root, device,
                              precision=args.precision, suite=args.suite,
-                             keep_features=args.keep_features, **shared)
+                             keep_features=args.keep_features,
+                             reference_check=args.reference_check, **shared)
         except Exception:  # noqa: BLE001 - continue with the next run
             failures.append(spec.name)
             print(f"[stage] {spec.name} FAILED\n{traceback.format_exc()}", flush=True)

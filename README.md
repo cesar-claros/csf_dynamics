@@ -15,12 +15,13 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/paper_api.py` | Calls the paper's 21 CSFs and 8 NC metrics on our features. |
 | `dynamics/scores.py` | All 23 CSFs: the paper's 21, kNN distance, and feature norm. Also the CSF groups of amendment A1. |
 | `dynamics/metrics.py` | AUROC, FPR@95, AURC, and AUGRC. |
-| `dynamics/descriptors.py` | ID-only descriptors, placement descriptors, and the three metric conventions of Stage D. |
+| `dynamics/descriptors.py` | ID-only descriptors (with CDNV and the other collapse metrics without an inversion), placement descriptors, and the three metric conventions of Stage D. |
 | `dynamics/evaluate.py` | Evaluates every checkpoint of a run (HPC). |
 | `dynamics/run_stage.py` | Trains and evaluates the runs of a stage (HPC). |
 | `dynamics/analyze_e.py` | Stage E gates, rosters, convergence, design-regime check, and analyses E1 to E7 (local). |
 | `dynamics/analyze_step0.py` | Step 0: the two rules of amendment A4 on more OOD sets and an earlier layer (local). |
 | `dynamics/analyze_checks.py` | Four checks on the Stage E and step 0 results, without new runs (local). |
+| `dynamics/analyze_refcheck.py` | Reference check: the decline of each fitted score under three reference sets, and which descriptors index the scores through a reset (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -176,6 +177,34 @@ uv run python -m dynamics.analyze_d --results-root dyn_results
 
 A question whose gate fails gets the verdict "not decided". Each run needs about 1.7 GB for its 38 checkpoints.
 
+### Reference check on saved checkpoints
+
+This evaluates saved checkpoints again and trains nothing. It fits every CSF on three reference sets (all training features, a training subset, and one half of the validation set) and tests each fit on the other half of the validation set. It also stores CDNV, the other collapse metrics without an inversion, and the weight norms. The results go to `results_f64_refcheck/`. Set `OOD` as for step 0.
+
+The two first runs of Stage D (about 40 minutes for each run, estimated):
+
+```bash
+nohup python -m dynamics.run_stage --only D1_seed0 D2_seed0 --skip-train --suite refcheck --reference-check --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_refcheck.log 2>&1 &
+```
+
+Optional, the 10 main runs of the pilot, which give 5 seeds for each recipe (about 4 hours, estimated):
+
+```bash
+nohup python -m dynamics.run_stage --stage e_main --skip-train --suite refcheck --reference-check --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_refcheck_pilot.log 2>&1 &
+```
+
+Each log line of this evaluation ends with the number of CSF errors and of reference errors. Pack only the new folders:
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_refcheck.tgz runs/*/results_f64_refcheck
+```
+
+Local analysis, after `tar xzf dyn_refcheck.tgz -C dyn_results`. The report goes to `dynamics/outputs/refcheck_report.md`:
+
+```bash
+uv run python -m dynamics.analyze_refcheck --results-root dyn_results
+```
+
 ## Local analysis
 
 Extract the archive into `dyn_results/`, so that `dyn_results/runs/` exists. Then:
@@ -202,6 +231,7 @@ These were fixed on 2026-11-10, before any run. The protocol records them.
 - **Precision (amendment A3).** All CSFs and descriptors run in float64. The paper pipeline fits its feature CSFs in float32. On the Stage E runs, those float32 fits failed gate G3: a second extraction of identical features changed the AUROC of 7 CSFs. `--precision float32` still exists and writes to `results/`. The default writes to `results_f64/`.
 - **Two rosters (amendments A1 and A2).** 10 CSFs need no fit, and 13 fit statistics of the training features. The analysis reports the no-fit roster and the full roster. On an unconverged checkpoint, the fitted CSFs are outside their design regime, and the no-fit roster is the reference. A checkpoint is converged if its own validation accuracy is at most 1 point below the final value of its run (amendment A2). So a checkpoint inside a training instability is not converged.
 - **Stage D (2026-11-12).** The five arms differ from D1 in one setting each: D2 adds augmentation, D3 adds label smoothing 0.1, D4 lowers the weight decay to 5e-5, and D5 trains without mixed precision. All five use the same schedule. `meta.json` of each run records the recipe. Without `--epochs`, a run uses the length of its recipe (200 for A, B, and C; 500 for D).
+- **Reference check (2026-11-12).** The validation set is split once into two class-stratified halves with seed 0. The training subset has the class counts of the first half and uses seed 1. The same split serves every checkpoint and every run with the same classes. From this date, every evaluation also stores the collapse metrics without an inversion (group `spread`) and the weight norms (group `weights`).
 - **Epoch 0** is the random start. The analysis reports it and keeps it out of the roster rule and the regret tables.
 - **A resumed training run** has the same data order as an uninterrupted run, but not the same augmentation draws.
 - **Environment.** The HPC runs use the x9 container, not the paper container (torch 1.13.1, Python 3.10). The tests pass with torch 2.6.0 on Python 3.12, with numpy 1.26 and with numpy 2.5.

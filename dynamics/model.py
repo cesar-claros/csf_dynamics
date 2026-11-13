@@ -16,6 +16,30 @@ def build_model(n_classes: int) -> torch.nn.Module:
     return models.resnet18(weights=None, num_classes=n_classes)
 
 
+def weight_norms(model: torch.nn.Module) -> dict[str, float]:
+    """L2 norms of the convolution weights, of the batch-norm scales, and of the head.
+
+    Every convolution of this network is followed by batch normalization, so its
+    output does not depend on the scale of its weights. `conv_norm` is the norm
+    over all convolutions, and `conv_norm_<block>` is the norm of one block.
+    """
+    blocks = {"conv1": "stem", "layer1": "stage1", "layer2": "stage2",
+              "layer3": "stage3", "layer4": "stage4"}
+    squared = dict.fromkeys(blocks.values(), 0.0)
+    scales = 0.0
+    for name, module in model.named_modules():
+        if isinstance(module, torch.nn.Conv2d):
+            squared[blocks[name.split(".")[0]]] += float(
+                module.weight.detach().double().pow(2).sum())
+        elif isinstance(module, torch.nn.BatchNorm2d):
+            scales += float(module.weight.detach().double().pow(2).sum())
+    out = {f"conv_norm_{block}": value ** 0.5 for block, value in squared.items()}
+    out["conv_norm"] = sum(squared.values()) ** 0.5
+    out["bn_scale_norm"] = scales ** 0.5
+    out["fc_norm"] = float(model.fc.weight.detach().double().norm())
+    return out
+
+
 def normalize(images: torch.Tensor) -> torch.Tensor:
     """Standardize [0, 1] images with the ImageNet channel statistics."""
     mean = torch.tensor(MEAN, device=images.device, dtype=images.dtype)
