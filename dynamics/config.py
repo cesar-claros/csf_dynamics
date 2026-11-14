@@ -115,6 +115,7 @@ STAGES: dict[str, list[RunSpec]] = {
     "c": ([RunSpec(recipe, seed) for recipe in ("A", "B") for seed in (5, 6, 7)]
           + [RunSpec(recipe, seed) for recipe in ("C1", "C2", "C3")
              for seed in range(3)]),
+    "c_first": [RunSpec("C2", 0)],
     "d_first": [RunSpec("D1", 0), RunSpec("D2", 0)],
     "d": [RunSpec(recipe, seed) for recipe in ("D1", "D2", "D3", "D4", "D5")
           for seed in range(5)],

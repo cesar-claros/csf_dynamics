@@ -22,6 +22,10 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_step0.py` | Step 0: the two rules of amendment A4 on more OOD sets and an earlier layer (local). |
 | `dynamics/analyze_checks.py` | Four checks on the Stage E and step 0 results, without new runs (local). |
 | `dynamics/analyze_refcheck.py` | Reference check: the decline of each fitted score under three reference sets, and which descriptors index the scores through a reset (local). |
+| `dynamics/analyze_selection.py` | Checkpoint selection with ID-only rules against a trivial rule (local). |
+| `dynamics/analyze_multimetric.py` | Score selection from several ID-only metrics together, with one run or one recipe family left out (local). |
+| `dynamics/rules.py` | Fits the selection rules of Stage C on the earlier runs and writes them to `dynamics/frozen/stage_c_rules.json` (local). |
+| `dynamics/analyze_c.py` | Stage C: applies the frozen rules to the new runs and reads the result with the decision rule of amendment A5 (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -176,6 +180,34 @@ uv run python -m dynamics.analyze_d --results-root dyn_results
 ```
 
 A question whose gate fails gets the verdict "not decided". Each run needs about 1.7 GB for its 38 checkpoints.
+
+### Stage C: frozen selection rules on new recipes (amendment A5)
+
+Stage C trains 15 new runs of 200 epochs: three fresh seeds of recipes A and B, and three seeds of each new recipe (C1, C2, C3). The selection rules are already fixed in `dynamics/frozen/stage_c_rules.json`. Do not build that file again after the first Stage C run: the analysis accepts only the file with the recorded hash. Set `OOD` as for step 0.
+
+First, one run with label smoothing, to measure the time and to check the log:
+
+```bash
+nohup python -m dynamics.run_stage --only C2_seed0 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_c_first.log 2>&1 &
+```
+
+Then the full stage. It skips the complete run (about 6.5 GPU-hours, estimated):
+
+```bash
+nohup python -m dynamics.run_stage --stage c --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_c.log 2>&1 &
+```
+
+Pack the Stage C runs. The fresh seeds of A and B have the numbers 5 to 7:
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_c.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/C?_seed? runs/A_seed[567] runs/B_seed[567]
+```
+
+Local analysis, after `tar xzf dyn_stage_c.tgz -C dyn_results`. It also needs the earlier `results_f64_refcheck` folders, which are local already. The report goes to `dynamics/outputs/stage_c_report.md`:
+
+```bash
+uv run python -m dynamics.analyze_c --results-root dyn_results
+```
 
 ### Reference check on saved checkpoints
 
