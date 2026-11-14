@@ -22,10 +22,13 @@ from dynamics import analyze_e
 from dynamics import analyze_multimetric as mm
 from dynamics.analyze_selection import FAMILY
 from dynamics.analyze_step0 import FAR_SETS
-from dynamics.config import DEFAULT_PRECISION, PRECISIONS, results_folder
+from dynamics.config import DEFAULT_PRECISION, PRECISIONS, STAGES, results_folder
 
 HERE = Path(__file__).resolve().parent
 RULES_PATH = HERE / "frozen" / "stage_c_rules.json"
+#: Amendment A6: the same rules, fitted on the earlier runs and the Stage C runs.
+RULES_V2_PATH = HERE / "frozen" / "stage_c2_rules.json"
+STAGE_C_SUITE = "step0"
 TARGETS = {"far": FAR_SETS, "near": ("ssb_hard", "ninco", "imagewoof")}
 #: Ridge rules in the file. `geometry` is the rule under test.
 RIDGE_RULES = ("geometry", "clock", "all")
@@ -114,6 +117,24 @@ def baselines(tables: analyze_e.Tables, sets: tuple[str, ...]) -> dict:
     return out
 
 
+def training_tables(root: Path, precision: str = DEFAULT_PRECISION,
+                    with_stage_c: bool = False) -> analyze_e.Tables:
+    """The results of the training runs of the rules.
+
+    The first rules use the 12 runs with the reference-check evaluation. With
+    `with_stage_c`, the 15 Stage C runs join them.
+    """
+    tables = analyze_e.read_runs(root, results_folder(precision,
+                                                      suite=TRAINING_SUITE))
+    if not with_stage_c:
+        return tables
+    names = {spec.name for spec in STAGES["c"]}
+    more = analyze_e.read_runs(root, results_folder(precision, suite=STAGE_C_SUITE))
+    return analyze_e.Tables(**{
+        name: pd.concat([frame, other[other["run"].isin(names)]], ignore_index=True)
+        for (name, frame), other in zip(vars(tables).items(), vars(more).values())})
+
+
 def build(tables: analyze_e.Tables, penalty: float = mm.PENALTY) -> dict:
     """Every frozen rule and baseline, as one JSON-ready dict."""
     out: dict = {"amendment": "A5", "penalty": penalty, "targets": {}}
@@ -156,13 +177,18 @@ def main() -> None:
     parser.add_argument("--results-root", required=True)
     parser.add_argument("--precision", choices=sorted(PRECISIONS),
                         default=DEFAULT_PRECISION)
-    parser.add_argument("--out", default=str(RULES_PATH))
+    parser.add_argument("--with-stage-c", action="store_true",
+                        help="amendment A6: also train on the 15 Stage C runs")
+    parser.add_argument("--out", help="default: the frozen path of the chosen rules")
     args = parser.parse_args()
-    tables = analyze_e.read_runs(
-        Path(args.results_root), results_folder(args.precision, suite=TRAINING_SUITE))
+    tables = training_tables(Path(args.results_root), args.precision,
+                             args.with_stage_c)
     if tables.metrics.empty:
         raise SystemExit(f"no training results under {args.results_root}/runs")
     rules = build(tables)
+    if args.with_stage_c:
+        rules["amendment"] = "A6"
+    args.out = args.out or str(RULES_V2_PATH if args.with_stage_c else RULES_PATH)
     digest = save(rules, Path(args.out))
     print(f"training runs: {len(rules['training_runs'])}, cells: "
           f"{rules['training_cells']}")

@@ -72,6 +72,10 @@ RECIPES = {
     "C1": Recipe(augment=True, weight_decay=5e-5),
     "C2": Recipe(augment=True, label_smoothing=0.1),
     "C3": Recipe(augment=False, lr=0.01),
+    # Amendment A6: the changes of C1 and C2, crossed with the other kind of recipe.
+    "C4": Recipe(augment=False, label_smoothing=0.1),
+    "C5": Recipe(augment=True, label_smoothing=0.1, weight_decay=5e-5),
+    "C6": Recipe(augment=False, weight_decay=5e-5),
     "D1": _long(augment=False),
     "D2": _long(augment=True),
     "D3": _long(augment=False, label_smoothing=0.1),
@@ -116,6 +120,8 @@ STAGES: dict[str, list[RunSpec]] = {
           + [RunSpec(recipe, seed) for recipe in ("C1", "C2", "C3")
              for seed in range(3)]),
     "c_first": [RunSpec("C2", 0)],
+    "c2": [RunSpec(recipe, seed) for recipe in ("C4", "C5", "C6")
+           for seed in range(3)],
     "d_first": [RunSpec("D1", 0), RunSpec("D2", 0)],
     "d": [RunSpec(recipe, seed) for recipe in ("D1", "D2", "D3", "D4", "D5")
           for seed in range(5)],

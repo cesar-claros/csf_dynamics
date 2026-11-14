@@ -26,6 +26,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_multimetric.py` | Score selection from several ID-only metrics together, with one run or one recipe family left out (local). |
 | `dynamics/rules.py` | Fits the selection rules of Stage C on the earlier runs and writes them to `dynamics/frozen/stage_c_rules.json` (local). |
 | `dynamics/analyze_c.py` | Stage C: applies the frozen rules to the new runs and reads the result with the decision rule of amendment A5 (local). |
+| `dynamics/analyze_c2.py` | Second test of the frozen all-metrics rule on three more recipes, amendment A6 (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -207,6 +208,24 @@ Local analysis, after `tar xzf dyn_stage_c.tgz -C dyn_results`. It also needs th
 
 ```bash
 uv run python -m dynamics.analyze_c --results-root dyn_results
+```
+
+### Second test of the all-metrics rule (amendment A6)
+
+Nine new runs of 200 epochs: three seeds of each recipe C4, C5, and C6. The rule under test is already in `dynamics/frozen/stage_c_rules.json`, and a second rule is in `dynamics/frozen/stage_c2_rules.json`. Do not build either file again. Set `OOD` as for step 0. About 4.2 GPU-hours, estimated:
+
+```bash
+nohup python -m dynamics.run_stage --stage c2 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_c2.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_c2.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/C[456]_seed?
+```
+
+Local analysis, after `tar xzf dyn_stage_c2.tgz -C dyn_results`. The report goes to `dynamics/outputs/stage_c2_report.md`:
+
+```bash
+uv run python -m dynamics.analyze_c2 --results-root dyn_results
 ```
 
 ### Reference check on saved checkpoints

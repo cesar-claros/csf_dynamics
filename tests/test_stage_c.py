@@ -170,3 +170,50 @@ def test_report_on_fabricated_stage_c_results(tmp_path, monkeypatch):
         monkeypatch.setattr("sys.argv", ["analyze_c", "--results-root", str(tmp_path),
                                          "--rules", str(other)])
         analyze_c.main()
+
+
+def table_c2(rule: list[float], b3: list[float], b1: list[float] | None = None
+             ) -> pd.DataFrame:
+    recipes = ["C4"] * 3 + ["C5"] * 3 + ["C6"] * 3
+    return pd.DataFrame({"recipe": recipes, "all": rule, "all_27_runs": rule,
+                         "B3": b3, "B1": b1 or [5.0] * 9})
+
+
+def test_decision_rule_of_amendment_a6():
+    from dynamics import analyze_c2
+
+    good = [0.2, 0.4, 0.1, 0.5, 0.3, 0.2, 0.6, 0.1, 0.3]
+    poor = [3.0, 2.5, 3.5, 4.0, 3.0, 3.6, 0.6, 0.1, 0.3]
+    assert analyze_c2.decide(table_c2(good, good))[0] == (
+        "H, the rule holds, and the recipe rule holds too")
+    assert analyze_c2.decide(table_c2(good, poor))[0].startswith("H+,")
+    one_bad = [0.2, 0.4, 0.1, 2.2, 2.4, 2.0, 0.0, 0.0, 0.0]     # mean 0.81, one recipe over
+    assert analyze_c2.holds(table_c2(one_bad, good), "all")
+    two_bad = [1.2, 1.4, 1.1, 1.2, 1.4, 1.0, 0.0, 0.0, 0.0]     # mean 0.81, two recipes over
+    assert analyze_c2.decide(table_c2(two_bad, good))[0].startswith("F,")
+    assert analyze_c2.decide(table_c2(poor, good))[0].startswith("F,")
+    half = [0.9, 0.8, 0.9, 0.9, 0.8, 0.9, 0.9, 0.8, 0.9]
+    assert analyze_c2.decide(table_c2(half, [1.6] * 3 + [0.0] * 6))[0] == (
+        "H, the rule holds, and the recipe rule holds too")
+    assert analyze_c2.decide(table_c2(half, [1.6] * 6 + [0.0] * 3))[0] == (
+        "H, the rule holds, and the recipe rule does not hold")
+    missing = table_c2(good, good)
+    missing.loc[0, "all"] = np.nan
+    assert analyze_c2.decide(missing)[0].startswith("not decided")
+
+
+def test_the_second_rules_file_is_frozen_and_the_new_stage_is_complete():
+    from dynamics import analyze_c2
+    from dynamics.config import RECIPES
+
+    assert rules.file_hash(rules.RULES_V2_PATH) == analyze_c2.RULES_V2_SHA256
+    second = rules.load(rules.RULES_V2_PATH)
+    assert len(second["training_runs"]) == 27 and second["amendment"] == "A6"
+    assert [spec.name for spec in STAGES["c2"]] == [
+        f"{recipe}_seed{seed}" for recipe in ("C4", "C5", "C6") for seed in range(3)]
+    assert (RECIPES["C4"].label_smoothing, RECIPES["C4"].augment) == (0.1, False)
+    assert (RECIPES["C5"].label_smoothing, RECIPES["C5"].weight_decay,
+            RECIPES["C5"].augment) == (0.1, 5e-5, True)
+    assert (RECIPES["C6"].weight_decay, RECIPES["C6"].augment) == (5e-5, False)
+    assert all(RECIPES[name].epochs == 200 for name in ("C4", "C5", "C6"))
+    assert analyze_c2.B3_SCORES == {"plain": "PCA_RecError", "augmented": "MahaPP"}
