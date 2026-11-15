@@ -28,7 +28,9 @@ from dynamics.config import DEFAULT_PRECISION, PENULTIMATE, PRECISIONS, results_
 HERE = Path(__file__).resolve().parent
 FAMILY = {"A": "plain", "D1": "plain", "C3": "plain", "C4": "plain", "C6": "plain",
           "B": "augmented", "D2": "augmented", "C1": "augmented", "C2": "augmented",
-          "C5": "augmented"}
+          "C5": "augmented",
+          "H0": "plain", "H4": "plain", "H5": "plain", "H7": "plain",
+          "H1": "augmented", "H2": "augmented", "H3": "augmented", "H6": "augmented"}
 ENVELOPE = "envelope"
 TARGETS = (ENVELOPE, "kNN", "NCI", "GradNorm", "MSR", "Maha")
 #: Index name: descriptor group, descriptor name, and the direction in which the

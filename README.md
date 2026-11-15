@@ -27,6 +27,9 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/rules.py` | Fits the selection rules of Stage C on the earlier runs and writes them to `dynamics/frozen/stage_c_rules.json` (local). |
 | `dynamics/analyze_c.py` | Stage C: applies the frozen rules to the new runs and reads the result with the decision rule of amendment A5 (local). |
 | `dynamics/analyze_c2.py` | Second test of the frozen all-metrics rule on three more recipes, amendment A6 (local). |
+| `dynamics/analyze_shortlist.py` | Shortlists of scores from the frozen rules against fixed and random shortlists (local). |
+| `dynamics/build_subset.py` | Builds the 100-class ImageNet subset of Stage H from parquet files (HPC). |
+| `dynamics/analyze_h.py` | Stage H: the gate after phase 1, the freeze of the rules, and the test on phase 2 (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -226,6 +229,70 @@ Local analysis, after `tar xzf dyn_stage_c2.tgz -C dyn_results`. The report goes
 
 ```bash
 uv run python -m dynamics.analyze_c2 --results-root dyn_results
+```
+
+### Stage H: 100 classes
+
+Stage H repeats the selection tests with a 100-class subset of ImageNet-1k. The plan is `../documentation/imagenet100_selection_protocol_2026-11-14.md`.
+
+**1. Build the subset, once.** It needs `pyarrow`. Check it, and install it into the overlay folder if it is missing:
+
+```bash
+python -c "import pyarrow; print(pyarrow.__version__)"
+```
+
+```bash
+python -m pip install --no-deps --target $DYN_ENV pyarrow
+```
+
+Set the folder of the parquet files and a new folder for the subset, then build. The script prints the hash of the class list and the image counts, and it writes the list to `dynamics/frozen/imagenet100_classes.txt`:
+
+```bash
+export PARQUET_DIR=/work/cniel/sw/FD_Shifts/project/datasets/imagenet1k_raw/data IMAGENET100_DIR=/path/to/imagenet100-160
+```
+
+```bash
+nohup python -m dynamics.build_subset --parquet-dir $PARQUET_DIR --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --out $IMAGENET100_DIR > dyn_h_build.log 2>&1 &
+```
+
+**2. First run,** to measure the time and the memory. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage h_first --eval-epochs 10 20 30 40 50 60 80 100 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENET100_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_h_first.log 2>&1 &
+```
+
+**3. Phase 1,** 10 runs. It skips the complete first run:
+
+```bash
+nohup python -m dynamics.run_stage --stage h1 --eval-epochs 10 20 30 40 50 60 80 100 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENET100_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_h1.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_h1.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/H[0-4]_seed?
+```
+
+**4. Gate and freeze, local.** Do this once, and before any phase 2 run. The hash that `freeze` prints goes into the protocol and into `RULES_H_SHA256` of `dynamics/analyze_h.py`:
+
+```bash
+uv run python -m dynamics.analyze_h gate --results-root dyn_results
+```
+
+```bash
+uv run python -m dynamics.analyze_h freeze --results-root dyn_results
+```
+
+**5. Phase 2,** 6 runs, only if the gate finds room to select:
+
+```bash
+nohup python -m dynamics.run_stage --stage h2 --eval-epochs 10 20 30 40 50 60 80 100 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENET100_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_h2.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_h2.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/H[567]_seed?
+```
+
+```bash
+uv run python -m dynamics.analyze_h test --results-root dyn_results
 ```
 
 ### Reference check on saved checkpoints

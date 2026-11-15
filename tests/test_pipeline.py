@@ -34,6 +34,8 @@ def pipeline(tiny_data, tmp_path_factory):
     stage("--only", "B_seed0", "--skip-train", "--suite", "refcheck",
           "--reference-check", "--extra-limit", "20", "--extra-set",
           f"places={extra / 'places'}")
+    stage("--only", "B_seed0", "--skip-train", "--suite", "last", "--eval-epochs",
+          "1", "--extra-limit", "20", "--extra-set", f"places={extra / 'places'}")
     return root, stage
 
 
@@ -118,6 +120,11 @@ def test_reference_check_writes_its_own_results(out_root, pipeline):
     assert base["reference_metrics"] == []
     with pytest.raises(SystemExit):
         pipeline[1]("--only", "B_seed0", "--skip-train", "--reference-check")
+
+
+def test_chosen_checkpoints_only(out_root):
+    folder = out_root / "runs" / "B_seed0" / "results_f64_last"
+    assert sorted(path.name for path in folder.iterdir()) == ["epoch_001.json"]
 
 
 def test_extra_sets_need_a_suite_name(pipeline):

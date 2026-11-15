@@ -45,7 +45,8 @@ def main() -> None:
     parser.add_argument("--only", nargs="+", metavar="RUN",
                         help="run names, in place of or within a stage")
     parser.add_argument("--out-root", required=True)
-    parser.add_argument("--imagenette-dir", required=True)
+    parser.add_argument("--imagenette-dir", "--id-dir", required=True,
+                        help="ID dataset folder with train/ and val/ class folders")
     parser.add_argument("--imagewoof-dir")
     parser.add_argument("--textures-dir")
     parser.add_argument("--skip-train", action="store_true")
@@ -65,6 +66,8 @@ def main() -> None:
                         help="name of an evaluation with extra sets, for example "
                              "step0; its results get their own folder")
     parser.add_argument("--keep-features", action="store_true")
+    parser.add_argument("--eval-epochs", type=int, nargs="+", metavar="EPOCH",
+                        help="evaluate only these checkpoints (default: every one)")
     parser.add_argument("--reference-check", action="store_true",
                         help="also fit every CSF on a training subset and on one "
                              "half of the validation set; needs --suite")
@@ -123,8 +126,8 @@ def main() -> None:
                 train_run(spec, paths, out_root, device, epochs=args.epochs, **shared)
             if not args.skip_eval:
                 evaluate_run(spec, paths, out_root, device,
-                             precision=args.precision, suite=args.suite,
-                             keep_features=args.keep_features,
+                             epochs=args.eval_epochs, precision=args.precision,
+                             suite=args.suite, keep_features=args.keep_features,
                              reference_check=args.reference_check, **shared)
         except Exception:  # noqa: BLE001 - continue with the next run
             failures.append(spec.name)

@@ -76,6 +76,15 @@ RECIPES = {
     "C4": Recipe(augment=False, label_smoothing=0.1),
     "C5": Recipe(augment=True, label_smoothing=0.1, weight_decay=5e-5),
     "C6": Recipe(augment=False, weight_decay=5e-5),
+    # Stage H: the eight recipes above with 100 epochs, for the 100-class subset.
+    "H0": Recipe(augment=False, epochs=100),
+    "H1": Recipe(augment=True, epochs=100),
+    "H2": Recipe(augment=True, weight_decay=5e-5, epochs=100),
+    "H3": Recipe(augment=True, label_smoothing=0.1, epochs=100),
+    "H4": Recipe(augment=False, lr=0.01, epochs=100),
+    "H5": Recipe(augment=False, label_smoothing=0.1, epochs=100),
+    "H6": Recipe(augment=True, label_smoothing=0.1, weight_decay=5e-5, epochs=100),
+    "H7": Recipe(augment=False, weight_decay=5e-5, epochs=100),
     "D1": _long(augment=False),
     "D2": _long(augment=True),
     "D3": _long(augment=False, label_smoothing=0.1),
@@ -122,6 +131,11 @@ STAGES: dict[str, list[RunSpec]] = {
     "c_first": [RunSpec("C2", 0)],
     "c2": [RunSpec(recipe, seed) for recipe in ("C4", "C5", "C6")
            for seed in range(3)],
+    "h_first": [RunSpec("H0", 0)],
+    "h1": [RunSpec(recipe, seed) for recipe in ("H0", "H1", "H2", "H3", "H4")
+           for seed in range(2)],
+    "h2": [RunSpec(recipe, seed) for recipe in ("H5", "H6", "H7")
+           for seed in range(2)],
     "d_first": [RunSpec("D1", 0), RunSpec("D2", 0)],
     "d": [RunSpec(recipe, seed) for recipe in ("D1", "D2", "D3", "D4", "D5")
           for seed in range(5)],
