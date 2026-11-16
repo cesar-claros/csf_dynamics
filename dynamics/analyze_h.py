@@ -33,7 +33,7 @@ HERE = Path(__file__).resolve().parent
 PHASE_1, PHASE_2 = "h1", "h2"
 RULES_H_PATH = HERE / "frozen" / "stage_h_rules.json"
 #: SHA-256 of the frozen file of phase 1. Set after `freeze`, before any phase 2 run.
-RULES_H_SHA256 = ""
+RULES_H_SHA256 = "85fcb9f47b1bf0c0d3dabb3491b8b8772d977bc84d50e6018858667f168e515b"
 ROOM = 1.0
 SIZES = (3, 5)
 TEST_SIZE = 3

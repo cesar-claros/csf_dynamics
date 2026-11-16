@@ -100,3 +100,10 @@ def test_gate_freeze_and_test_on_fabricated_runs(tmp_path, monkeypatch):
     assert "**Outcome: F, the lead fails" in text, "random metrics give no rule"
     assert "the fixed shortlist is useful" in text
     assert "mean shortlist regret of 0.00: **it transfers**" in text
+
+
+def test_the_committed_stage_h_rules_are_the_frozen_ones():
+    assert rules.file_hash(analyze_h.RULES_H_PATH) == analyze_h.RULES_H_SHA256
+    frozen = analyze_h.load(analyze_h.RULES_H_PATH)
+    assert len(frozen["training_runs"]) == 10 and frozen["training_cells"] == 80
+    assert frozen["b1"] == "NCI" and len(frozen["shortlists"]["3"]) == 3
