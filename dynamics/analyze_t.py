@@ -38,7 +38,7 @@ HERE = Path(__file__).resolve().parent
 TRAIN_STAGE, TEST_STAGE = "a7_train", "t"
 RULES_T_PATH = HERE / "frozen" / "stage_t_rules.json"
 #: SHA-256 of the frozen file. Set after `freeze`, before any run of the test stage.
-RULES_T_SHA256 = ""
+RULES_T_SHA256 = "a21233c622d62aa449f5525272d671402dce86f1752ed61324f21c433799546e"
 WIDE, TRAINING, STORED, TIERS, ALL = (
     "wide_validation", "training", "stored_validation", "all_tiers", "all_metrics")
 RULE_NAMES = (WIDE, TRAINING, STORED, TIERS, ALL)

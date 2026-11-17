@@ -182,3 +182,13 @@ def test_freeze_and_test_on_fabricated_runs(tmp_path, monkeypatch):
     assert "2 of 2 runs" in text and "leave the decision rule: none" in text
     assert "**Outcome:" in text and "**The hypothesis is" in text
     assert "the fixed shortlist is useful" in text
+
+
+def test_the_committed_a7_rules_are_the_frozen_ones():
+    assert rules.file_hash(analyze_t.RULES_T_PATH) == analyze_t.RULES_T_SHA256
+    frozen = analyze_t.load(analyze_t.RULES_T_PATH)
+    assert len(frozen["training_runs"]) == 36 and frozen["baseline_runs"] == 34
+    sizes = {name: len(rule.columns) for name, rule in frozen["rules"].items()}
+    assert sizes == {analyze_t.WIDE: 68, analyze_t.TRAINING: 59, analyze_t.STORED: 20,
+                     analyze_t.TIERS: 137, analyze_t.ALL: 106}
+    assert all(c.startswith("valid/") for c in frozen["rules"][analyze_t.WIDE].columns)
