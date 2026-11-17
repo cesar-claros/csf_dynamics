@@ -36,6 +36,7 @@ def pipeline(tiny_data, tmp_path_factory):
           f"places={extra / 'places'}")
     stage("--only", "B_seed0", "--skip-train", "--suite", "last", "--eval-epochs",
           "1", "--extra-limit", "20", "--extra-set", f"places={extra / 'places'}")
+    stage("--only", "B_seed0", "--valstats-only")
     return root, stage
 
 
@@ -120,6 +121,17 @@ def test_reference_check_writes_its_own_results(out_root, pipeline):
     assert base["reference_metrics"] == []
     with pytest.raises(SystemExit):
         pipeline[1]("--only", "B_seed0", "--skip-train", "--reference-check")
+
+
+def test_light_pass_equals_the_validation_rows_of_an_evaluation(out_root):
+    folder = out_root / "runs" / "B_seed0"
+    light = json.loads((folder / "results_f64_valstats" / "epoch_001.json")
+                       .read_text())
+    full = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
+    rows = [row for row in full["descriptors"] if row["group"] == "valid"]
+    assert len(light["descriptors"]) == 68 and light["descriptors"] == rows
+    assert sorted(p.name for p in (folder / "results_f64_valstats").iterdir()) == [
+        "epoch_000.json", "epoch_001.json"]
 
 
 def test_chosen_checkpoints_only(out_root):

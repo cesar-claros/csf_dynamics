@@ -10,7 +10,8 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from dynamics.config import LAYERS, PENULTIMATE
+from dynamics.config import LAYERS, NEIGHBORS, PENULTIMATE
+from dynamics.metrics import auroc
 from dynamics.scores import knn_distance
 
 CLASS_MEAN_METRICS = ("var_collapse", "equinorm_uc", "equiangular_uc",
@@ -21,6 +22,10 @@ PLACEMENT = ("norm_ratio", "outside_share_gap", "class_cosine_gap",
 SPREAD = ("cdnv", "trace_ratio", "within_inside_share")
 REFERENCE_SPREAD = ("val_over_train", "val_over_train_inside",
                     "val_over_train_outside")
+#: Amendment A7: statistics of the validation set alone. 14 for each stage, and 12
+#: of the logits and the head.
+VALID = "valid"
+CALIBRATION_BINS = 15
 #: Stage D, question Q3: the same geometry under other conventions.
 CONVENTIONS = ("outside_share_gap_raw", "orthodev", "rowspace_share",
                "rowspace_share_gap")
@@ -368,4 +373,98 @@ def convention_descriptors(train: dict, val: dict, unseen: dict[str, dict],
         add(name, against(summary(values[PENULTIMATE]), reference))
     mask = torch.as_tensor(correct)
     add("id_errors", against(summary(features[~mask]), summary(features[mask])))
+    return rows
+
+
+def neighbor_agreement(features: torch.Tensor, labels: torch.Tensor,
+                       k: int = NEIGHBORS, chunk: int = 2048,
+                       device: torch.device | None = None) -> float:
+    """Mean share of the k nearest other rows that have the same label.
+
+    Distances are between the unit-normalized rows, as in the kNN score.
+    """
+    unit = features.double()
+    unit = (unit / unit.norm(dim=1, keepdim=True).clamp_min(1e-12)).to(device or "cpu")
+    k = min(k, len(unit) - 1)
+    shares = []
+    for start in range(0, len(unit), chunk):
+        part = unit[start:start + chunk]
+        distance = torch.cdist(part, unit)
+        rows = torch.arange(len(part), device=unit.device)
+        distance[rows, rows + start] = float("inf")
+        nearest = distance.topk(k, dim=1, largest=False).indices.cpu()
+        same = labels[nearest] == labels[start:start + len(part), None]
+        shares.append(same.double().mean(dim=1))
+    return float(torch.cat(shares).mean())
+
+
+def calibration_error(confidence: np.ndarray, correct: np.ndarray,
+                      bins: int = CALIBRATION_BINS) -> float:
+    """Expected calibration error with bins of equal width."""
+    index = np.minimum((confidence * bins).astype(int), bins - 1)
+    error = 0.0
+    for b in range(bins):
+        inside = index == b
+        if inside.any():
+            error += inside.mean() * abs(correct[inside].mean()
+                                         - confidence[inside].mean())
+    return float(error)
+
+
+def validation_statistics(val: dict, w: torch.Tensor, n_classes: int,
+                          device: torch.device | None = None) -> list[dict]:
+    """Statistics of the validation set alone, as long-format rows (amendment A7).
+
+    They read the validation features, logits, and labels, and the head `w`. No
+    training image and no unseen image enters. The class means and the centre of
+    each stage are those of the validation set.
+    """
+    labels = val["labels"]
+    rows: list[dict] = []
+
+    def add(name: str, layer: str, value: float | np.floating | torch.Tensor
+            ) -> None:
+        rows.append({"group": VALID, "name": name, "layer": layer,
+                     "value": float(value)})
+
+    for layer in LAYERS:
+        v = val[layer].double()
+        geometry = class_geometry(v, labels, n_classes)
+        for name, value in {**class_mean_metrics(v, labels, n_classes),
+                            **spread_metrics(v, labels, n_classes),
+                            **spectrum(v)}.items():
+            add(name, layer, value)
+        z = v - geometry.global_mean
+        add("span_share", layer, (z @ geometry.basis).pow(2).sum() / z.pow(2).sum())
+        norms = z.norm(dim=1).numpy()
+        add("norm_cv", layer, norms.std() / norms.mean())
+        add("class_cosine", layer,
+            np.median(cosine_to(z, geometry.centered[labels]).numpy()))
+        radial = (v - geometry.means[labels]).norm(dim=1).numpy()
+        add("radial_tail", layer, np.quantile(radial, 0.95) / np.median(radial))
+        add("neighbor_agreement", layer, neighbor_agreement(v, labels, device=device))
+
+    logits = val["logits"].double()
+    probability = torch.softmax(logits, dim=1)
+    confidence = probability.max(dim=1).values.numpy()
+    correct = (logits.argmax(dim=1) == labels).numpy()
+    top = logits.topk(2, dim=1).values
+    layer = "logits"
+    add("accuracy", layer, correct.mean())
+    add("loss", layer, torch.nn.functional.cross_entropy(logits, labels))
+    add("margin", layer, np.median((top[:, 0] - top[:, 1]).numpy()))
+    add("max_softmax", layer, confidence.mean())
+    add("entropy", layer, -(probability * probability.clamp_min(1e-300).log())
+        .sum(dim=1).mean())
+    add("max_logit", layer, top[:, 0].mean())
+    add("energy", layer, torch.logsumexp(logits, dim=1).mean())
+    add("logit_norm", layer, logits.norm(dim=1).mean())
+    add("calibration_error", layer, calibration_error(confidence, correct))
+    add("max_softmax_errors", layer,
+        confidence[~correct].mean() if (~correct).any() else np.nan)
+    add("error_auroc", layer, auroc(confidence[correct], confidence[~correct])
+        if correct.any() and (~correct).any() else np.nan)
+    means = class_geometry(val[PENULTIMATE].double(), labels, n_classes).centered
+    head = w.double()
+    add("head_distance", layer, (head / head.norm() - means / means.norm()).pow(2).sum())
     return rows

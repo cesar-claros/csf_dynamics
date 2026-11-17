@@ -30,6 +30,8 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_shortlist.py` | Shortlists of scores from the frozen rules against fixed and random shortlists (local). |
 | `dynamics/build_subset.py` | Builds the 100-class ImageNet subset of Stage H from parquet files (HPC). |
 | `dynamics/analyze_h.py` | Stage H: the gate after phase 1, the freeze of the rules, and the test on phase 2 (local). |
+| `dynamics/analyze_valonly.py` | Post hoc check: a rule from the stored validation statistics against one from training statistics (local). |
+| `dynamics/analyze_t.py` | Amendment A7: freezes the rules from the wider validation statistics and tests them on four new recipes (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -229,6 +231,40 @@ Local analysis, after `tar xzf dyn_stage_c2.tgz -C dyn_results`. The report goes
 
 ```bash
 uv run python -m dynamics.analyze_c2 --results-root dyn_results
+```
+
+### Amendment A7: a rule from validation statistics (10 classes)
+
+The plan is `../documentation/validation_statistics_amendment_2026-11-17.md`.
+
+**1. Light pass on the saved checkpoints of the 36 earlier 10-class runs.** It reads the Imagenette validation set only, and it writes `results_f64_valstats/` in each run folder. It reports a run whose checkpoints are missing and continues:
+
+```bash
+nohup python -m dynamics.run_stage --stage a7_train --valstats-only --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR > dyn_a7_valstats.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_a7_valstats.tgz runs/*/results_f64_valstats
+```
+
+**2. Freeze, local, once.** After `tar xzf dyn_a7_valstats.tgz -C dyn_results`. The hash that it prints goes into the amendment and into `RULES_T_SHA256` of `dynamics/analyze_t.py`, and both go into a public commit before step 3:
+
+```bash
+uv run python -m dynamics.analyze_t freeze --results-root dyn_results
+```
+
+**3. The 8 runs with the new recipes,** about 3.7 GPU-hours. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage t --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_t.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_t.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/T?_seed?
+```
+
+```bash
+uv run python -m dynamics.analyze_t test --results-root dyn_results
 ```
 
 ### Stage H: 100 classes

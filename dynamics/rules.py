@@ -131,7 +131,8 @@ def training_tables(root: Path, precision: str = DEFAULT_PRECISION,
     names = {spec.name for spec in STAGES["c"]}
     more = analyze_e.read_runs(root, results_folder(precision, suite=STAGE_C_SUITE))
     return analyze_e.Tables(**{
-        name: pd.concat([frame, other[other["run"].isin(names)]], ignore_index=True)
+        name: pd.concat([frame, other if other.empty
+                         else other[other["run"].isin(names)]], ignore_index=True)
         for (name, frame), other in zip(vars(tables).items(), vars(more).values())})
 
 

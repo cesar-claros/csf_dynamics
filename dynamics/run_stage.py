@@ -29,7 +29,7 @@ from dynamics.config import (
     checkpoint_epochs,
     parse_run,
 )
-from dynamics.evaluate import evaluate_run
+from dynamics.evaluate import evaluate_run, validation_pass
 from dynamics.train import train_run
 
 
@@ -66,6 +66,9 @@ def main() -> None:
                         help="name of an evaluation with extra sets, for example "
                              "step0; its results get their own folder")
     parser.add_argument("--keep-features", action="store_true")
+    parser.add_argument("--valstats-only", action="store_true",
+                        help="only store the validation statistics of the saved "
+                             "checkpoints (amendment A7); needs the ID folder only")
     parser.add_argument("--eval-epochs", type=int, nargs="+", metavar="EPOCH",
                         help="evaluate only these checkpoints (default: every one)")
     parser.add_argument("--reference-check", action="store_true",
@@ -83,7 +86,8 @@ def main() -> None:
     if args.stage is None and not args.only:
         parser.error("give --stage or --only")
     smoke = (args.epochs, args.image_size, args.limit) != (None, IMAGE_SIZE, None)
-    if not smoke and not (args.imagewoof_dir and args.textures_dir):
+    if not smoke and not args.valstats_only and not (args.imagewoof_dir
+                                                     and args.textures_dir):
         parser.error("protocol runs need --imagewoof-dir and --textures-dir")
     if bool(args.extra_set) != bool(args.suite):
         parser.error("give --extra-set and --suite together, so that results with "
@@ -114,6 +118,9 @@ def main() -> None:
     failures = []
     for spec in specs:
         try:
+            if args.valstats_only:
+                validation_pass(spec, paths, out_root, device, **shared)
+                continue
             if args.recheck:
                 if spec.seed == 0 and spec.held_out is None:
                     evaluate_run(spec, paths, out_root, device,

@@ -252,6 +252,13 @@ def evaluation_sets(paths: DataPaths, held_out: int | None, size: int,
     return sets
 
 
+def validation_set(paths: DataPaths, held_out: int | None, size: int,
+                   limit: int | None = None, workers: int = 4) -> Dataset:
+    """The ID validation set alone, decoded once and held in memory."""
+    files, labels, _, _ = labelled_split(paths.imagenette, "val", held_out, limit)
+    return cache(ImageList(files, labels, eval_transform(size)), workers)
+
+
 def manifest(paths: DataPaths) -> dict:
     """Class identifiers and image counts, for gate G5."""
     out: dict = {}

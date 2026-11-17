@@ -29,6 +29,7 @@ HERE = Path(__file__).resolve().parent
 FAMILY = {"A": "plain", "D1": "plain", "C3": "plain", "C4": "plain", "C6": "plain",
           "B": "augmented", "D2": "augmented", "C1": "augmented", "C2": "augmented",
           "C5": "augmented",
+          "T2": "plain", "T4": "plain", "T1": "augmented", "T3": "augmented",
           "H0": "plain", "H4": "plain", "H5": "plain", "H7": "plain",
           "H1": "augmented", "H2": "augmented", "H3": "augmented", "H6": "augmented"}
 ENVELOPE = "envelope"

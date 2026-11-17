@@ -25,11 +25,12 @@ from dynamics.config import (
     results_folder,
     run_dir,
 )
-from dynamics.data import evaluation_sets, manifest
+from dynamics.data import evaluation_sets, manifest, validation_set
 from dynamics.descriptors import (
     convention_descriptors,
     id_descriptors,
     placement_descriptors,
+    validation_statistics,
 )
 from dynamics.metrics import auroc, error_metrics, set_metrics
 from dynamics.model import build_model, extract, weight_norms
@@ -241,6 +242,7 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
     descriptors += [{"group": "clock", "name": name, "layer": "", "value": value}
                     for name, value in clock.items()]
     descriptors += id_descriptors(train, val, n_classes, device)
+    descriptors += validation_statistics(val, w, n_classes, device)
     return {
         "metrics": metrics,
         "layer_metrics": layer_metrics,
@@ -331,3 +333,46 @@ def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
                  if reference_check else "")
         print(f"[eval] {spec.name} ({tag}) epoch {epoch}: val acc {accuracy:.4f}, "
               f"{failed} CSF errors, {extra}{out['seconds']}s", flush=True)
+
+
+#: Results folder of the light pass that stores only the validation statistics.
+VALSTATS_SUITE = "valstats"
+
+
+def validation_pass(spec: RunSpec, paths: DataPaths, out_root: Path,
+                    device: torch.device, workers: int = 4, limit: int | None = None,
+                    image_size: int = IMAGE_SIZE) -> None:
+    """Store the validation statistics of every saved checkpoint of one run.
+
+    This pass reads the ID validation set only. It writes one small JSON file per
+    checkpoint to <run>/results_f64_valstats/ and skips the files that exist.
+
+    Raises:
+        FileNotFoundError: If the run has no checkpoint.
+    """
+    folder = run_dir(out_root, spec.name)
+    tag = results_folder(DEFAULT_PRECISION, suite=VALSTATS_SUITE)
+    saved = sorted(int(path.stem.split("_")[1])
+                   for path in (folder / "checkpoints").glob("epoch_*.pt"))
+    if not saved:
+        raise FileNotFoundError(f"no checkpoints in {folder}")
+    todo = [epoch for epoch in saved
+            if not (folder / tag / f"epoch_{epoch:03d}.json").exists()]
+    if not todo:
+        print(f"[valstats] {spec.name}: nothing to do", flush=True)
+        return
+    dataset = validation_set(paths, spec.held_out, image_size, limit, workers)
+    (folder / tag).mkdir(parents=True, exist_ok=True)
+    began = time.time()
+    for epoch in todo:
+        model, state = load_model(checkpoint_path(out_root, spec.name, epoch), device)
+        val = extract(model, dataset, device, workers=0)
+        rows = validation_statistics(val, model.fc.weight.detach().float().cpu(),
+                                     len(state["classes"]), device)
+        out = {"run": spec.name, "epoch": epoch, "n_classes": len(state["classes"]),
+               "descriptors": rows}
+        temporary = folder / tag / f"epoch_{epoch:03d}.tmp"
+        temporary.write_text(json.dumps(out))
+        temporary.replace(folder / tag / f"epoch_{epoch:03d}.json")
+    print(f"[valstats] {spec.name}: {len(todo)} checkpoints, "
+          f"{time.time() - began:.0f}s", flush=True)

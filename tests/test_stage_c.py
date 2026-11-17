@@ -1,4 +1,5 @@
 import json
+import zlib
 
 import numpy as np
 import pandas as pd
@@ -113,7 +114,7 @@ def test_gate_k_and_the_interval():
 
 def result(run: str, epoch: int, rule_columns: list[str], best: str) -> dict:
     """One result file whose metrics exist for every column of the frozen rules."""
-    rng = np.random.default_rng(abs(hash((run, epoch))) % 2 ** 32)
+    rng = np.random.default_rng(zlib.crc32(f"{run}-{epoch}".encode()))
     descriptors = []
     for column in rule_columns:
         name, _, layer = column.partition("@")
