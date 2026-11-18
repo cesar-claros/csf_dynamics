@@ -32,6 +32,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_h.py` | Stage H: the gate after phase 1, the freeze of the rules, and the test on phase 2 (local). |
 | `dynamics/analyze_valonly.py` | Post hoc check: a rule from the stored validation statistics against one from training statistics (local). |
 | `dynamics/analyze_t.py` | Amendment A7: freezes the rules from the wider validation statistics and tests them on four new recipes (local). |
+| `dynamics/analyze_u.py` | Amendment A8: tests the frozen all-tiers rule of amendment A7 on four more recipes, with a second fit as a secondary rule (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -265,6 +266,26 @@ cd "$DYN_ROOT" && tar czf dyn_stage_t.tgz --exclude=checkpoints --exclude=featur
 
 ```bash
 uv run python -m dynamics.analyze_t test --results-root dyn_results
+```
+
+### Amendment A8: the all-tiers rule on four more recipes (10 classes)
+
+The plan is `../documentation/all_tiers_test_amendment_2026-11-17.md`. The rule under test is the all-tiers rule in `dynamics/frozen/stage_t_rules.json`, as amendment A7 froze it. The second fit in `dynamics/frozen/stage_u_rules.json` is a secondary rule. It is frozen, and its hash is in `RULES_U_SHA256` of `dynamics/analyze_u.py`.
+
+**1. The 8 runs with the new recipes,** about 3.7 GPU-hours. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage u --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_u.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_u.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/U?_seed?
+```
+
+**2. The test, local.** After `tar xzf dyn_stage_u.tgz -C dyn_results`. It stops if one of the two rules files does not have its frozen hash:
+
+```bash
+uv run python -m dynamics.analyze_u test --results-root dyn_results
 ```
 
 ### Stage H: 100 classes

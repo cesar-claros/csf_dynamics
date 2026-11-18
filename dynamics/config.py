@@ -82,6 +82,12 @@ RECIPES = {
     "T2": Recipe(augment=False, label_smoothing=0.1, weight_decay=5e-5),
     "T3": Recipe(augment=True, weight_decay=5e-3),
     "T4": Recipe(augment=False, label_smoothing=0.2),
+    # Amendment A8: test recipes for the all-tiers rule. U1 and U2 combine earlier
+    # changes, and U3 and U4 use the levels of T3 and T4 in the other kind.
+    "U1": Recipe(augment=False, lr=0.01, label_smoothing=0.1),
+    "U2": Recipe(augment=True, lr=0.01, weight_decay=5e-5),
+    "U3": Recipe(augment=False, weight_decay=5e-3),
+    "U4": Recipe(augment=True, label_smoothing=0.2),
     # Stage H: the eight recipes above with 100 epochs, for the 100-class subset.
     "H0": Recipe(augment=False, epochs=100),
     "H1": Recipe(augment=True, epochs=100),
@@ -139,6 +145,8 @@ STAGES: dict[str, list[RunSpec]] = {
            for seed in range(3)],
     "t": [RunSpec(recipe, seed) for recipe in ("T1", "T2", "T3", "T4")
           for seed in range(2)],
+    "u": [RunSpec(recipe, seed) for recipe in ("U1", "U2", "U3", "U4")
+          for seed in range(2)],
     "h_first": [RunSpec("H0", 0)],
     "h1": [RunSpec(recipe, seed) for recipe in ("H0", "H1", "H2", "H3", "H4")
            for seed in range(2)],
@@ -153,6 +161,8 @@ STAGES: dict[str, list[RunSpec]] = {
 #: Amendment A7: the earlier 10-class runs that the frozen rules are fitted on.
 STAGES["a7_train"] = [*STAGES["e_main"], *STAGES["c"], *STAGES["c2"],
                       *STAGES["d_first"]]
+#: Amendment A8: the runs of the second fit of the all-tiers rule.
+STAGES["a8_train"] = [*STAGES["a7_train"], *STAGES["t"]]
 
 
 @dataclass(frozen=True)

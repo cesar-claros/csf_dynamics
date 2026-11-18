@@ -106,16 +106,18 @@ def input_sets(columns: list[str]) -> dict[str, list[str]]:
         ALL: original}
 
 
-def build(tables: analyze_e.Tables) -> dict:
-    """Every frozen rule and baseline of amendment A7."""
+def build(tables: analyze_e.Tables, names: tuple[str, ...] = RULE_NAMES,
+          amendment: str = "A7") -> dict:
+    """The frozen rules `names` and the baselines, fitted on `tables`."""
     meta, scores, metrics = cells(tables)
     usable = list(mm.transform(metrics).columns)
-    sets = input_sets(usable)
+    sets = {name: columns for name, columns in input_sets(usable).items()
+            if name in names}
     final = scores[analyze_c.final_mask(meta)].droplevel("epoch")
     final = final[[parse_run(run).recipe[0] != "D" for run in final.index]]
     kind = analyze_h.recipes_of(final.index).map(FAMILY)
     return {
-        "amendment": "A7", "sets": list(FAR_SETS), "penalty": mm.PENALTY,
+        "amendment": amendment, "sets": list(FAR_SETS), "penalty": mm.PENALTY,
         "training_runs": sorted(set(meta.index.get_level_values("run"))),
         "training_cells": len(meta), "baseline_runs": len(final),
         "rules": {name: asdict(rules.fit_ridge_rule(metrics, scores, columns))
