@@ -60,17 +60,32 @@ def set_metrics(id_scores: np.ndarray, id_correct: np.ndarray,
                 unseen_scores: np.ndarray) -> dict[str, float]:
     """Metrics of one CSF on ID validation images against one unseen set.
 
-    AUROC and FPR@95 measure the separation of all ID images from the unseen
-    images. AURC and AUGRC follow the paper's convention: misclassified ID images
-    and all unseen images are failures.
+    Two conventions for the misclassified ID images:
+
+    - `auroc` and `fpr95` measure the separation of all ID images from the unseen
+      images. `aurc` and `augrc` use the mix of all ID images and the unseen
+      images, where misclassified ID images and all unseen images are failures.
+    - The `_correct` values leave the misclassified ID images out, so every
+      failure is an unseen image. This is the convention of the paper code
+      (`compute_metrics` in `src/csf_pipeline.py`) and the target of amendment A9.
+      Without a correct ID image they are NaN.
     """
     confidence = np.concatenate([id_scores, unseen_scores])
     residual = np.concatenate([1 - id_correct.astype(np.float64),
                                np.ones(len(unseen_scores))])
     aurc, augrc = risk_coverage(confidence, residual)
+    kept = id_scores[id_correct.astype(bool)]
+    aurc_correct, augrc_correct = float("nan"), float("nan")
+    if len(kept):
+        aurc_correct, augrc_correct = risk_coverage(
+            np.concatenate([kept, unseen_scores]),
+            np.concatenate([np.zeros(len(kept)), np.ones(len(unseen_scores))]))
     return {"auroc": auroc(id_scores, unseen_scores),
             "fpr95": fpr_at_tpr(id_scores, unseen_scores),
-            "aurc": aurc, "augrc": augrc}
+            "aurc": aurc, "augrc": augrc,
+            "auroc_correct": auroc(kept, unseen_scores),
+            "fpr95_correct": fpr_at_tpr(kept, unseen_scores),
+            "aurc_correct": aurc_correct, "augrc_correct": augrc_correct}
 
 
 def error_metrics(id_scores: np.ndarray, id_correct: np.ndarray) -> dict[str, float]:

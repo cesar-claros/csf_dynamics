@@ -76,6 +76,41 @@ def test_set_metrics_counts_unseen_inputs_as_failures():
     assert out["aurc"] == pytest.approx((cumulative / np.arange(1, 6)).mean())
 
 
+@pytest.mark.parametrize("ties", [False, True])
+def test_set_metrics_correct_only_values_leave_the_id_errors_out(ties):
+    rng = np.random.default_rng(1)
+    id_scores, unseen = rng.normal(1.0, 1.0, 300), rng.normal(0.0, 1.0, 400)
+    if ties:
+        id_scores, unseen = np.round(id_scores), np.round(unseen)
+    correct = rng.random(300) < 0.75
+    out = set_metrics(id_scores, correct, unseen)
+    kept = id_scores[correct]
+    assert out["auroc_correct"] == auroc(kept, unseen) != out["auroc"]
+    assert out["fpr95_correct"] == fpr_at_tpr(kept, unseen)
+    aurc, augrc = risk_coverage(np.r_[kept, unseen],
+                                np.r_[np.zeros(len(kept)), np.ones(len(unseen))])
+    assert (out["aurc_correct"], out["augrc_correct"]) == (aurc, augrc)
+    # With correct ID images only, AUGRC is a linear function of the AUROC, so the
+    # two metrics give the scores the same order.
+    c, f = len(kept), len(unseen)
+    assert out["augrc_correct"] == pytest.approx(
+        ((1 - out["auroc_correct"]) * c * f + f * (f + 1) / 2) / (c + f) ** 2,
+        abs=1e-12)
+    # The values of the old convention are the same as before.
+    old = risk_coverage(np.r_[id_scores, unseen],
+                        np.r_[1 - correct.astype(float), np.ones(len(unseen))])
+    assert (out["aurc"], out["augrc"]) == old
+    assert out["auroc"] == auroc(id_scores, unseen)
+
+
+def test_set_metrics_without_a_correct_image():
+    out = set_metrics(np.array([2.0, 1.0]), np.array([False, False]),
+                      np.array([0.5, 0.2]))
+    assert np.isfinite([out["auroc"], out["augrc"]]).all()
+    assert all(np.isnan(out[name]) for name in (
+        "auroc_correct", "fpr95_correct", "aurc_correct", "augrc_correct"))
+
+
 def test_error_metrics_separate_correct_from_misclassified():
     scores = np.array([4.0, 3.0, 2.0, 1.0])
     out = error_metrics(scores, np.array([True, True, False, False]))

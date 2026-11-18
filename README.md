@@ -33,6 +33,8 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_valonly.py` | Post hoc check: a rule from the stored validation statistics against one from training statistics (local). |
 | `dynamics/analyze_t.py` | Amendment A7: freezes the rules from the wider validation statistics and tests them on four new recipes (local). |
 | `dynamics/analyze_u.py` | Amendment A8: tests the frozen all-tiers rule of amendment A7 on four more recipes, with a second fit as a secondary rule (local). |
+| `dynamics/analyze_v.py` | Amendment A9: freezes and tests the rules for the correct-only target of the paper, part 1 with 10 classes and part 2 with 100 classes (local). |
+| `dynamics/analyze_augrc.py` | Exploratory check, post hoc: the selection results with two other conventions for the misclassified ID images, the correct-only convention of the paper and the failure convention of the stored AUGRC (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
 | `tests/` | Unit tests and an end-to-end test on tiny images. No GPU needed. |
@@ -286,6 +288,46 @@ cd "$DYN_ROOT" && tar czf dyn_stage_u.tgz --exclude=checkpoints --exclude=featur
 
 ```bash
 uv run python -m dynamics.analyze_u test --results-root dyn_results
+```
+
+**3. Exploratory check of the convention for the misclassified ID images (post hoc).** The planned tests use the AUROC of all ID images against the unseen images. This check takes two other targets from the stored values of the runs of the five tests, and it writes no rules file:
+
+```bash
+uv run python -m dynamics.analyze_augrc --results-root dyn_results
+```
+
+### Amendment A9: selection with the correct-only target (10 and 100 classes)
+
+The plan is `../documentation/correct_only_selection_amendment_2026-11-18.md`. The target is the AUROC of the correct ID validation images against the OOD images. From this build on, every evaluation stores the correct-only values (`auroc_correct`, `fpr95_correct`, `aurc_correct`, `augrc_correct`) next to the old values. The two rules files are frozen: `dynamics/frozen/stage_v_rules.json` (part 1) and `dynamics/frozen/stage_w_rules.json` (part 2). Their hashes are in `dynamics/analyze_v.py`.
+
+**1. Part 1, 10 classes: the 12 runs of stage `v`,** about 5.6 GPU-hours. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage v --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_v.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_v.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/V?_seed?
+```
+
+**2. Part 2, 100 classes: the 8 runs of stage `w`,** about 13 GPU-hours. It needs the subset folder of Stage H:
+
+```bash
+nohup python -m dynamics.run_stage --stage w --eval-epochs 10 20 30 40 50 60 80 100 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENET100_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_w.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_w.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/W?_seed?
+```
+
+**3. The tests, local.** After `tar xzf dyn_stage_v.tgz -C dyn_results` and the same for part 2. Each test stops if a rules file does not have its frozen hash, or if the stored target and the target from the old values differ (gate M):
+
+```bash
+uv run python -m dynamics.analyze_v test --part 1 --results-root dyn_results
+```
+
+```bash
+uv run python -m dynamics.analyze_v test --part 2 --results-root dyn_results
 ```
 
 ### Stage H: 100 classes
