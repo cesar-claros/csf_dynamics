@@ -33,7 +33,8 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_valonly.py` | Post hoc check: a rule from the stored validation statistics against one from training statistics (local). |
 | `dynamics/analyze_t.py` | Amendment A7: freezes the rules from the wider validation statistics and tests them on four new recipes (local). |
 | `dynamics/analyze_u.py` | Amendment A8: tests the frozen all-tiers rule of amendment A7 on four more recipes, with a second fit as a secondary rule (local). |
-| `dynamics/analyze_v.py` | Amendment A9: freezes and tests the rules for the correct-only target of the paper, part 1 with 10 classes and part 2 with 100 classes (local). |
+| `dynamics/analyze_v.py` | Amendments A9 and A10: freezes and tests the rules for the correct-only target of the paper. Part 1 has 10 classes, part 2 has 100 classes, and part 3 has 10 classes without label smoothing (local). |
+| `dynamics/analyze_factors.py` | Exploratory check, post hoc: how much each recipe setting changes the order of the scores, on matched pairs of recipes (local). |
 | `dynamics/analyze_augrc.py` | Exploratory check, post hoc: the selection results with two other conventions for the misclassified ID images, the correct-only convention of the paper and the failure convention of the stored AUGRC (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
 | `dynamics/analyze_d.py` | Stage D: gates I, P, and M, and the rules for questions Q1 to Q4 (local). |
@@ -328,6 +329,32 @@ uv run python -m dynamics.analyze_v test --part 1 --results-root dyn_results
 
 ```bash
 uv run python -m dynamics.analyze_v test --part 2 --results-root dyn_results
+```
+
+### Amendment A10: selection without label smoothing (10 classes)
+
+The plan is `../documentation/no_label_smoothing_amendment_2026-11-18.md`. The scope is recipes without label smoothing, and the target is that of amendment A9. The rules file `dynamics/frozen/stage_x_rules.json` is frozen, and its hash is in `dynamics/analyze_v.py`.
+
+**1. The 12 runs of stage `x`,** about 5.6 GPU-hours. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage x --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_x.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_x.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/X?_seed?
+```
+
+**2. The test, local.** After `tar xzf dyn_stage_x.tgz -C dyn_results`:
+
+```bash
+uv run python -m dynamics.analyze_v test --part 3 --results-root dyn_results
+```
+
+**3. Exploratory check of the recipe settings (post hoc).** It compares pairs of recipes that differ in one setting (augmentation, weight decay, label smoothing, or learning rate), on the 10-class runs with 200 epochs:
+
+```bash
+uv run python -m dynamics.analyze_factors --results-root dyn_results
 ```
 
 ### Stage H: 100 classes

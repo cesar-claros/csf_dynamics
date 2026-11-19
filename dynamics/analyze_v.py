@@ -1,18 +1,22 @@
-"""Amendment A9: selection with the correct-only target (freeze and test, two parts).
+"""Amendments A9 and A10: selection with the correct-only target (freeze and test).
 
     python -m dynamics.analyze_v freeze --part 1 --results-root dyn_results
     python -m dynamics.analyze_v test --part 1 --results-root dyn_results
 
 The target is the AUROC of the correct ID validation images against the unseen
-images, as a mean over the far sets. Part 1 has 10 classes and tests the all-tiers
-rule on the recipes V1 to V6. Part 2 has 100 classes and tests the all-metrics
-rule on the recipes W1 to W4. Each part has its own frozen file.
+images, as a mean over the far sets. Each part has its own frozen file:
+
+- Part 1 (A9, 10 classes): the all-tiers rule on the recipes V1 to V6.
+- Part 2 (A9, 100 classes): the all-metrics rule on the recipes W1 to W4.
+- Part 3 (A10, 10 classes, no label smoothing): the all-tiers rule, fitted on the
+  earlier runs without label smoothing, on the recipes X1 to X6.
 
 `freeze` fits the rule and the baselines of a part on the earlier runs, where the
 target comes from stored values. `test` reads the new runs, where the evaluation
 stores the target directly.
 
-Protocol: ../documentation/correct_only_selection_amendment_2026-11-18.md
+Protocols: ../documentation/correct_only_selection_amendment_2026-11-18.md and
+../documentation/no_label_smoothing_amendment_2026-11-18.md
 """
 from __future__ import annotations
 
@@ -38,6 +42,8 @@ HERE = Path(__file__).resolve().parent
 RULE, ONE, RECIPE_RULE, STAND_IN = "rule", at.B1, at.RECIPE_RULE, au.STAND_IN
 #: Part 1: the same rule, fitted on the 36 runs of amendment A7 only (secondary).
 SMALL = "fit_36_runs"
+#: Part 3: the same rule, fitted on all earlier 10-class runs (secondary).
+WIDE_FIT = "fit_all_runs"
 HOLD = 1.0
 MIN_ACCURACY = 0.60
 #: Gate M: largest difference between the stored target and the derived one.
@@ -54,6 +60,7 @@ class Part:
     hash, and the name of the rule in that file.
     """
 
+    amendment: str
     label: str
     train_stage: str
     test_stage: str
@@ -66,25 +73,51 @@ class Part:
 #: SHA-256 of the two frozen files. Set after `freeze`, before any new run.
 RULES_V_SHA256 = "0c2e23a62678a3d34568b12a588f673eb721552f9819ef84676f4f19c1f960ba"
 RULES_W_SHA256 = "254ddf23b0532a8260dff7830997f7c8b9d4f681006d81aea22b8e0162562b66"
+RULES_X_SHA256 = "d64c050265cfb9d5a787d6e39acb9ad6d3d3b709a260305948e6b7d99859fed6"
+RULES_V_PATH = HERE / "frozen" / "stage_v_rules.json"
 PARTS = {
-    1: Part("part 1, 10 classes", "a9_train", "v",
-            HERE / "frozen" / "stage_v_rules.json", RULES_V_SHA256, at.TIERS,
+    1: Part("A9", "part 1, 10 classes", "a9_train", "v", RULES_V_PATH,
+            RULES_V_SHA256, at.TIERS,
             ("a7_rule", at.RULES_T_PATH, at.RULES_T_SHA256, at.TIERS)),
-    2: Part("part 2, 100 classes", "a9_train_h", "w",
+    2: Part("A9", "part 2, 100 classes", "a9_train_h", "w",
             HERE / "frozen" / "stage_w_rules.json", RULES_W_SHA256, analyze_h.RULE,
             ("stage_h_rule", analyze_h.RULES_H_PATH, analyze_h.RULES_H_SHA256,
-             analyze_h.RULE))}
+             analyze_h.RULE)),
+    3: Part("A10", "10 classes, no label smoothing", "a10_train", "x",
+            HERE / "frozen" / "stage_x_rules.json", RULES_X_SHA256, at.TIERS,
+            ("a9_rule", RULES_V_PATH, RULES_V_SHA256, at.TIERS))}
 
 
-def training_tables(number: int, root: Path) -> analyze_e.Tables:
-    """The earlier runs of a part: 52 with 10 classes, or 16 with 100 classes."""
-    if number == 2:
-        return analyze_h.read_stage(root, (analyze_h.PHASE_1, analyze_h.PHASE_2))
-    first = au.training_tables(root)
-    second = analyze_h.read_stage(root, (au.TEST_STAGE,))
+def join(first: analyze_e.Tables, second: analyze_e.Tables) -> analyze_e.Tables:
     return analyze_e.Tables(**{
         key: pd.concat([frame, other], ignore_index=True)
         for (key, frame), other in zip(vars(first).items(), vars(second).values())})
+
+
+def ten_class_tables(root: Path, with_v: bool = False) -> analyze_e.Tables:
+    """The earlier 10-class runs: the 52 of amendment A9, and stage `v` if asked."""
+    tables = join(au.training_tables(root),
+                  analyze_h.read_stage(root, (au.TEST_STAGE,)))
+    if with_v:
+        tables = join(tables, analyze_h.read_stage(root, (PARTS[1].test_stage,)))
+    return tables
+
+
+def training_tables(number: int, root: Path) -> analyze_e.Tables:
+    """The runs that the rule of a part is fitted on.
+
+    Part 1 has 52 runs with 10 classes, part 2 has 16 runs with 100 classes, and
+    part 3 has the 10-class runs without label smoothing.
+    """
+    if number == 2:
+        return analyze_h.read_stage(root, (analyze_h.PHASE_1, analyze_h.PHASE_2))
+    if number == 1:
+        return ten_class_tables(root)
+    keep = {spec.name for spec in STAGES[PARTS[number].train_stage]}
+    tables = ten_class_tables(root, with_v=True)
+    return analyze_e.Tables(**{
+        key: frame if frame.empty else frame[frame["run"].isin(keep)]
+        .reset_index(drop=True) for key, frame in vars(tables).items()})
 
 
 def build(number: int, root: Path) -> dict:
@@ -98,6 +131,12 @@ def build(number: int, root: Path) -> dict:
         small = at.build(ag.with_target(at.earlier_tables(root), n_id, n_unseen,
                                         ag.CORRECT_ONLY), names=(part.rule,))
         built["rules"][SMALL] = small["rules"][part.rule]
+    elif number == 3:
+        built = at.build(aimed, names=(part.rule,), amendment="A10")
+        wide = at.build(ag.with_target(ten_class_tables(root, with_v=True), n_id,
+                                       n_unseen, ag.CORRECT_ONLY),
+                        names=(part.rule,))
+        built["rules"][WIDE_FIT] = wide["rules"][part.rule]
     else:
         found = analyze_h.build(aimed)
         built = {
@@ -152,8 +191,9 @@ def choices(number: int, frozen: dict, earlier: dict, metrics: pd.DataFrame,
         ONE: [frozen[ONE]] * len(metrics),
         RECIPE_RULE: [frozen[RECIPE_RULE][k] for k in kind],
         STAND_IN: au.stand_in_choice(metrics, csfs)}, index=metrics.index)
-    if SMALL in frozen["rules"]:
-        picks[SMALL] = frozen["rules"][SMALL].choose(metrics)
+    for name, rule in frozen["rules"].items():        # secondary rules of the file
+        if name != part.rule:
+            picks[name] = rule.choose(metrics)
     picks[part.earlier[0]] = earlier["rules"][part.earlier[3]].choose(metrics)
     return picks
 
@@ -263,7 +303,7 @@ def main() -> None:
         tables = training_tables(args.part, root)
         wanted = {spec.name for spec in STAGES[part.train_stage]}
         ready = set(tables.metrics["run"])
-        if args.part == 1:
+        if args.part != 2:
             rows = tables.descriptors
             ready = set(rows.loc[rows["group"] == VALID, "run"])
         if wanted - ready:
@@ -355,7 +395,8 @@ def main() -> None:
                    "\n\nCorrect-only AUGRC in points (lower is better) of the "
                    "choice of the rule, of the fixed score, and of the best "
                    "score:\n\n" + block(augrc, 2))))]
-    text = (f"# Amendment A9, {part.label}: selection with the correct-only target"
+    text = (f"# Amendment {part.amendment}, {part.label}: selection with the "
+            "correct-only target"
             "\n\nThe target, the rule, the baselines, and the decision rule were "
             "fixed before the new runs.\n"
             + "".join(f"\n## {title}\n\n{body}\n" for title, body in sections))

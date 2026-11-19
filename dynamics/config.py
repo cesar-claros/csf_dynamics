@@ -96,6 +96,14 @@ RECIPES = {
     "V4": Recipe(augment=False, lr=0.1),
     "V5": Recipe(augment=True, label_smoothing=0.3),
     "V6": Recipe(augment=True, lr=0.1),
+    # Amendment A10: test recipes without label smoothing. They are the six cells
+    # of the grid of kind, weight decay, and learning rate that had no recipe.
+    "X1": Recipe(augment=False, weight_decay=5e-3, lr=0.01),
+    "X2": Recipe(augment=True, weight_decay=5e-3, lr=0.01),
+    "X3": Recipe(augment=False, weight_decay=5e-5, lr=0.1),
+    "X4": Recipe(augment=True, weight_decay=5e-5, lr=0.1),
+    "X5": Recipe(augment=False, weight_decay=5e-3, lr=0.1),
+    "X6": Recipe(augment=True, weight_decay=5e-3, lr=0.1),
     # Amendment A9, part 2 (100 classes): V1, V2, V4, and V5 with 100 epochs.
     "W1": Recipe(augment=False, weight_decay=5e-3, label_smoothing=0.1, epochs=100),
     "W2": Recipe(augment=True, lr=0.01, label_smoothing=0.1, epochs=100),
@@ -164,6 +172,8 @@ STAGES: dict[str, list[RunSpec]] = {
           for seed in range(2)],
     "w": [RunSpec(recipe, seed) for recipe in ("W1", "W2", "W3", "W4")
           for seed in range(2)],
+    "x": [RunSpec(recipe, seed) for recipe in ("X1", "X2", "X3", "X4", "X5", "X6")
+          for seed in range(2)],
     "h_first": [RunSpec("H0", 0)],
     "h1": [RunSpec(recipe, seed) for recipe in ("H0", "H1", "H2", "H3", "H4")
            for seed in range(2)],
@@ -183,6 +193,11 @@ STAGES["a8_train"] = [*STAGES["a7_train"], *STAGES["t"]]
 #: Amendment A9: the runs that the rules of each part are fitted on.
 STAGES["a9_train"] = [*STAGES["a8_train"], *STAGES["u"]]
 STAGES["a9_train_h"] = [*STAGES["h1"], *STAGES["h2"]]
+#: Amendment A10: all earlier 10-class runs, and those without label smoothing,
+#: which the rule under test is fitted on.
+STAGES["a10_all"] = [*STAGES["a9_train"], *STAGES["v"]]
+STAGES["a10_train"] = [spec for spec in STAGES["a10_all"]
+                       if RECIPES[spec.recipe].label_smoothing == 0]
 
 
 @dataclass(frozen=True)
