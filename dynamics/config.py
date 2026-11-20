@@ -109,6 +109,11 @@ RECIPES = {
     "W2": Recipe(augment=True, lr=0.01, label_smoothing=0.1, epochs=100),
     "W3": Recipe(augment=False, lr=0.1, epochs=100),
     "W4": Recipe(augment=True, label_smoothing=0.3, epochs=100),
+    # Amendment A11 (100 classes): a weight decay of 5e-3 without label smoothing,
+    # for the check of the fixed NCI score.
+    "Y1": Recipe(augment=False, weight_decay=5e-3, epochs=100),
+    "Y2": Recipe(augment=True, weight_decay=5e-3, epochs=100),
+    "Y3": Recipe(augment=True, weight_decay=5e-3, lr=0.01, epochs=100),
     # Stage H: the eight recipes above with 100 epochs, for the 100-class subset.
     "H0": Recipe(augment=False, epochs=100),
     "H1": Recipe(augment=True, epochs=100),
@@ -174,6 +179,8 @@ STAGES: dict[str, list[RunSpec]] = {
           for seed in range(2)],
     "x": [RunSpec(recipe, seed) for recipe in ("X1", "X2", "X3", "X4", "X5", "X6")
           for seed in range(2)],
+    "y": [RunSpec(recipe, seed) for recipe in ("Y1", "Y2", "Y3")
+          for seed in range(2)],
     "h_first": [RunSpec("H0", 0)],
     "h1": [RunSpec(recipe, seed) for recipe in ("H0", "H1", "H2", "H3", "H4")
            for seed in range(2)],
@@ -197,6 +204,10 @@ STAGES["a9_train_h"] = [*STAGES["h1"], *STAGES["h2"]]
 #: which the rule under test is fitted on.
 STAGES["a10_all"] = [*STAGES["a9_train"], *STAGES["v"]]
 STAGES["a10_train"] = [spec for spec in STAGES["a10_all"]
+                       if RECIPES[spec.recipe].label_smoothing == 0]
+#: Amendment A11: the earlier 100-class runs without label smoothing, which give
+#: the fixed score under test.
+STAGES["a11_train"] = [spec for spec in [*STAGES["a9_train_h"], *STAGES["w"]]
                        if RECIPES[spec.recipe].label_smoothing == 0]
 
 

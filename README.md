@@ -34,6 +34,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_t.py` | Amendment A7: freezes the rules from the wider validation statistics and tests them on four new recipes (local). |
 | `dynamics/analyze_u.py` | Amendment A8: tests the frozen all-tiers rule of amendment A7 on four more recipes, with a second fit as a secondary rule (local). |
 | `dynamics/analyze_v.py` | Amendments A9 and A10: freezes and tests the rules for the correct-only target of the paper. Part 1 has 10 classes, part 2 has 100 classes, and part 3 has 10 classes without label smoothing (local). |
+| `dynamics/analyze_y.py` | Amendment A11: checks if the fixed NCI score stays within 1 point at a weight decay of 5e-3 with 100 classes. It has no rule (local). |
 | `dynamics/analyze_factors.py` | Exploratory check, post hoc: how much each recipe setting changes the order of the scores, on matched pairs of recipes (local). |
 | `dynamics/analyze_augrc.py` | Exploratory check, post hoc: the selection results with two other conventions for the misclassified ID images, the correct-only convention of the paper and the failure convention of the stored AUGRC (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
@@ -355,6 +356,26 @@ uv run python -m dynamics.analyze_v test --part 3 --results-root dyn_results
 
 ```bash
 uv run python -m dynamics.analyze_factors --results-root dyn_results
+```
+
+### Amendment A11: the fixed score at high weight decay (100 classes)
+
+The plan is `../documentation/fixed_score_high_weight_decay_amendment_2026-11-19.md`. The check has no rule. The fixed choices are frozen in `dynamics/frozen/stage_y_choices.json`, and the hash is in `dynamics/analyze_y.py`.
+
+**1. The 6 runs of stage `y`,** about 9.6 GPU-hours. It needs the subset folder of Stage H:
+
+```bash
+nohup python -m dynamics.run_stage --stage y --eval-epochs 10 20 30 40 50 60 80 100 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENET100_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_y.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_y.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/Y?_seed?
+```
+
+**2. The check, local.** After `tar xzf dyn_stage_y.tgz -C dyn_results`:
+
+```bash
+uv run python -m dynamics.analyze_y test --results-root dyn_results
 ```
 
 ### Stage H: 100 classes

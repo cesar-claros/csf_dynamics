@@ -1,0 +1,1 @@
+{"amendment":"A11","images":{"id":5000,"unseen":5000},"one_score":"NCI","recipe_rule":{"augmented":"NCI","plain":"NCI"},"runs":["H0_seed0","H0_seed1","H1_seed0","H1_seed1","H2_seed0","H2_seed1","H4_seed0","H4_seed1","H7_seed0","H7_seed1","W3_seed0","W3_seed1"],"shortlists":{"3":["NCI","MahaPP","CTM"],"5":["NCI","MahaPP","CTM","Energy","FeatureNorm"]},"target":"correct_only"}
