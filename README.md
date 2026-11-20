@@ -35,6 +35,8 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_u.py` | Amendment A8: tests the frozen all-tiers rule of amendment A7 on four more recipes, with a second fit as a secondary rule (local). |
 | `dynamics/analyze_v.py` | Amendments A9 and A10: freezes and tests the rules for the correct-only target of the paper. Part 1 has 10 classes, part 2 has 100 classes, and part 3 has 10 classes without label smoothing (local). |
 | `dynamics/analyze_y.py` | Amendment A11: checks if the fixed NCI score stays within 1 point at a weight decay of 5e-3 with 100 classes. It has no rule (local). |
+| `dynamics/analyze_z.py` | Amendment A12: freezes and tests the rule from the statistics of each score, part 1 with 10 classes and part 2 with 100 classes, on the far sets and on two secondary targets (local). |
+| `dynamics/analyze_loro.py` | Exploratory check, post hoc: rules from each set of ID-only metrics with one recipe left out, against choices with no metric (local). |
 | `dynamics/analyze_factors.py` | Exploratory check, post hoc: how much each recipe setting changes the order of the scores, on matched pairs of recipes (local). |
 | `dynamics/analyze_augrc.py` | Exploratory check, post hoc: the selection results with two other conventions for the misclassified ID images, the correct-only convention of the paper and the failure convention of the stored AUGRC (local). |
 | `dynamics/interpolation.py` | Lists the training accuracy at each checkpoint of a run, for gate I of Stage D (HPC). |
@@ -376,6 +378,46 @@ cd "$DYN_ROOT" && tar czf dyn_stage_y.tgz --exclude=checkpoints --exclude=featur
 
 ```bash
 uv run python -m dynamics.analyze_y test --results-root dyn_results
+```
+
+**3. Exploratory read with one recipe left out (post hoc).** The plan and the result are in `../documentation/metrics_leave_one_recipe_out_2026-11-20.md`. The default stages are the 100-class ones. For the 10-class runs, add `--stages c c2 t u v x --out dynamics/outputs/loro_ten_report.md`:
+
+```bash
+uv run python -m dynamics.analyze_loro --results-root dyn_results
+```
+
+### Amendment A12: a rule from the statistics of each score (10 and 100 classes)
+
+The plan is `../documentation/score_statistics_rule_amendment_2026-11-20.md`. The two rules files are frozen: `dynamics/frozen/stage_z_rules.json` (part 1) and `dynamics/frozen/stage_k_rules.json` (part 2). Their hashes are in `dynamics/analyze_z.py`.
+
+**1. Part 1, 10 classes: the 16 runs of stage `z`,** about 7.5 GPU-hours. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage z --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_z.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_z.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/Z?_seed?
+```
+
+**2. Part 2, 100 classes: the 8 runs of stage `k`,** about 12.8 GPU-hours. It needs the subset folder of Stage H:
+
+```bash
+nohup python -m dynamics.run_stage --stage k --eval-epochs 10 20 30 40 50 60 80 100 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENET100_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_k.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_k.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/K?_seed?
+```
+
+**3. The tests, local.** After `tar xzf dyn_stage_z.tgz -C dyn_results` and the same for part 2:
+
+```bash
+uv run python -m dynamics.analyze_z test --part 1 --results-root dyn_results
+```
+
+```bash
+uv run python -m dynamics.analyze_z test --part 2 --results-root dyn_results
 ```
 
 ### Stage H: 100 classes

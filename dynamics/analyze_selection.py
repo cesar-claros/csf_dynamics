@@ -37,6 +37,9 @@ FAMILY = {"A": "plain", "D1": "plain", "C3": "plain", "C4": "plain", "C6": "plai
           "X1": "plain", "X3": "plain", "X5": "plain",
           "X2": "augmented", "X4": "augmented", "X6": "augmented",
           "Y1": "plain", "Y2": "augmented", "Y3": "augmented",
+          "Z1": "plain", "Z3": "plain", "Z5": "plain", "Z7": "plain",
+          "Z2": "augmented", "Z4": "augmented", "Z6": "augmented", "Z8": "augmented",
+          "K1": "plain", "K4": "plain", "K2": "augmented", "K3": "augmented",
           "H0": "plain", "H4": "plain", "H5": "plain", "H7": "plain",
           "H1": "augmented", "H2": "augmented", "H3": "augmented", "H6": "augmented"}
 ENVELOPE = "envelope"

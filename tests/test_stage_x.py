@@ -30,10 +30,11 @@ def test_recipes_and_stages_of_amendment_a10():
         assert all(RECIPES[name] != recipe for other, recipe in RECIPES.items()
                    if other != name)
     # With the new recipes, every cell of the grid without label smoothing has one.
+    # Later recipes (amendment A12) have levels outside the grid.
     grid = {(recipe.augment, recipe.weight_decay, recipe.lr)
             for recipe in RECIPES.values()
             if recipe.label_smoothing == 0 and recipe.epochs == 200}
-    assert grid == {(kind, decay, rate) for kind in (False, True)
+    assert grid >= {(kind, decay, rate) for kind in (False, True)
                     for decay in (5e-5, 5e-4, 5e-3) for rate in (0.01, 0.05, 0.1)}
 
 

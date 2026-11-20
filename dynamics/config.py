@@ -114,6 +114,22 @@ RECIPES = {
     "Y1": Recipe(augment=False, weight_decay=5e-3, epochs=100),
     "Y2": Recipe(augment=True, weight_decay=5e-3, epochs=100),
     "Y3": Recipe(augment=True, weight_decay=5e-3, lr=0.01, epochs=100),
+    # Amendment A12, part 1 (10 classes): test recipes for the rule from the score
+    # statistics. Z1 to Z4 have label smoothing. Z5 to Z8 have none, with a level
+    # that no recipe has.
+    "Z1": Recipe(augment=False, label_smoothing=0.1, lr=0.1),
+    "Z2": Recipe(augment=True, label_smoothing=0.1, lr=0.1),
+    "Z3": Recipe(augment=False, label_smoothing=0.1, weight_decay=5e-5, lr=0.01),
+    "Z4": Recipe(augment=True, label_smoothing=0.1, weight_decay=5e-3),
+    "Z5": Recipe(augment=False, weight_decay=2e-3),
+    "Z6": Recipe(augment=True, weight_decay=2e-3),
+    "Z7": Recipe(augment=False, lr=0.02),
+    "Z8": Recipe(augment=True, weight_decay=0.0),
+    # Amendment A12, part 2 (100 classes, 100 epochs).
+    "K1": Recipe(augment=False, label_smoothing=0.1, weight_decay=5e-5, epochs=100),
+    "K2": Recipe(augment=True, label_smoothing=0.1, weight_decay=5e-3, epochs=100),
+    "K3": Recipe(augment=True, lr=0.01, epochs=100),
+    "K4": Recipe(augment=False, weight_decay=5e-3, lr=0.01, epochs=100),
     # Stage H: the eight recipes above with 100 epochs, for the 100-class subset.
     "H0": Recipe(augment=False, epochs=100),
     "H1": Recipe(augment=True, epochs=100),
@@ -181,6 +197,10 @@ STAGES: dict[str, list[RunSpec]] = {
           for seed in range(2)],
     "y": [RunSpec(recipe, seed) for recipe in ("Y1", "Y2", "Y3")
           for seed in range(2)],
+    "z": [RunSpec(recipe, seed) for recipe in ("Z1", "Z2", "Z3", "Z4", "Z5", "Z6",
+                                                "Z7", "Z8") for seed in range(2)],
+    "k": [RunSpec(recipe, seed) for recipe in ("K1", "K2", "K3", "K4")
+          for seed in range(2)],
     "h_first": [RunSpec("H0", 0)],
     "h1": [RunSpec(recipe, seed) for recipe in ("H0", "H1", "H2", "H3", "H4")
            for seed in range(2)],
@@ -205,6 +225,9 @@ STAGES["a9_train_h"] = [*STAGES["h1"], *STAGES["h2"]]
 STAGES["a10_all"] = [*STAGES["a9_train"], *STAGES["v"]]
 STAGES["a10_train"] = [spec for spec in STAGES["a10_all"]
                        if RECIPES[spec.recipe].label_smoothing == 0]
+#: Amendment A12: all earlier runs of each setting, which the rules are fitted on.
+STAGES["a12_train"] = [*STAGES["a10_all"], *STAGES["x"]]
+STAGES["a12_train_h"] = [*STAGES["a9_train_h"], *STAGES["w"], *STAGES["y"]]
 #: Amendment A11: the earlier 100-class runs without label smoothing, which give
 #: the fixed score under test.
 STAGES["a11_train"] = [spec for spec in [*STAGES["a9_train_h"], *STAGES["w"]]
