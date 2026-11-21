@@ -124,7 +124,10 @@ def disturbed_checkpoints(converged: pd.Series) -> pd.DataFrame:
     """Checkpoints after the first converged one of their run that are not converged."""
     first = convergence_epochs(converged)
     rows = converged[~converged].reset_index()[["run", "epoch"]]
-    return rows[rows["epoch"] > rows["run"].map(first)].reset_index(drop=True)
+    # The cast makes the mapped epochs numbers also for no rows: in pandas 3, an
+    # empty column of run names keeps its string type through `map`.
+    start = rows["run"].map(first).astype(np.float64)
+    return rows[rows["epoch"] > start].reset_index(drop=True)
 
 
 def is_converged(runs, epochs, converged: pd.Series) -> np.ndarray:

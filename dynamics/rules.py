@@ -56,7 +56,9 @@ class RidgeRule:
 
     def inputs(self, metrics: pd.DataFrame) -> np.ndarray:
         """Standardized inputs of the rows of `metrics`. A missing column gives NaN."""
-        x = metrics.reindex(columns=self.columns).to_numpy(dtype=np.float64)
+        # A copy, because pandas 3 gives a read-only array and the log is in place.
+        x = metrics.reindex(columns=self.columns).to_numpy(dtype=np.float64,
+                                                           copy=True)
         log = np.array(self.log)
         floor = np.array([np.nan if v is None else v for v in self.floor])
         x[:, log] = np.log10(np.where(x[:, log] <= 0, floor[log], x[:, log]))
@@ -80,7 +82,8 @@ def fit_ridge_rule(metrics: pd.DataFrame, scores: pd.DataFrame, columns: list[st
     Raises:
         ValueError: If a column has a non-finite training value.
     """
-    x = metrics[columns].to_numpy(dtype=np.float64)
+    # A copy, because pandas 3 gives a read-only array and the log is in place.
+    x = metrics[columns].to_numpy(dtype=np.float64, copy=True)
     if not np.isfinite(x).all():
         raise ValueError("a training column has a non-finite value")
     log = (x > 0).all(axis=0)
