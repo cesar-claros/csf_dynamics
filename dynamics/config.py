@@ -5,7 +5,7 @@ Protocol: ../documentation/imagenette_dynamics_protocol_2026-11-10.md
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +33,8 @@ PRECISIONS = {"float32": "results", "float64": "results_f64"}
 DEFAULT_PRECISION = "float64"
 
 LAYERS = ("stage1", "stage2", "stage3", "stage4")
+#: Networks of torchvision that the pipeline can train, all from a random start.
+ARCHS = ("resnet18", "resnet50", "densenet121")
 PENULTIMATE = "stage4"
 #: Largest number of images that an extra OOD set contributes (evenly thinned).
 EXTRA_LIMIT = 5000
@@ -47,7 +49,8 @@ class Recipe:
 
     The learning rate warms up to `lr`, follows a cosine from `lr` to `lr_floor`
     until epoch `decay_epochs` (the last epoch if None), and then stays at
-    `lr_floor`. `amp` turns mixed precision on a GPU on or off.
+    `lr_floor`. `amp` turns mixed precision on a GPU on or off. `arch` is the
+    network: one of `ARCHS`.
     """
 
     augment: bool
@@ -58,6 +61,7 @@ class Recipe:
     lr_floor: float = 0.0
     decay_epochs: int | None = None
     amp: bool = True
+    arch: str = "resnet18"
 
 
 def _long(augment: bool, **changes: Any) -> Recipe:
@@ -147,6 +151,16 @@ RECIPES = {
 }
 
 
+#: Amendment A13: the recipes of stage `z` with another architecture.
+#: R1 to R8 are ResNet-50, and N1 to N8 are DenseNet-121.
+A13_ARCHS = {"R": "resnet50", "N": "densenet121"}
+for _letter, _arch in A13_ARCHS.items():
+    for _number in range(1, 9):
+        RECIPES[f"{_letter}{_number}"] = replace(RECIPES[f"Z{_number}"], arch=_arch)
+#: Amendment A13: the checkpoints that are evaluated.
+A13_EVAL_EPOCHS = (20, 40, 60, 80, 100, 120, 160, 200)
+
+
 @dataclass(frozen=True)
 class RunSpec:
     """One training run: a recipe, a seed, and an optional held-out class."""
@@ -201,6 +215,12 @@ STAGES: dict[str, list[RunSpec]] = {
                                                 "Z7", "Z8") for seed in range(2)],
     "k": [RunSpec(recipe, seed) for recipe in ("K1", "K2", "K3", "K4")
           for seed in range(2)],
+    "r": [RunSpec(f"R{number}", seed) for number in range(1, 9)
+          for seed in range(2)],
+    "n": [RunSpec(f"N{number}", seed) for number in range(1, 9)
+          for seed in range(2)],
+    "r_first": [RunSpec("R1", 0)],
+    "n_first": [RunSpec("N1", 0)],
     "h_first": [RunSpec("H0", 0)],
     "h1": [RunSpec(recipe, seed) for recipe in ("H0", "H1", "H2", "H3", "H4")
            for seed in range(2)],

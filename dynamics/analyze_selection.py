@@ -40,6 +40,8 @@ FAMILY = {"A": "plain", "D1": "plain", "C3": "plain", "C4": "plain", "C6": "plai
           "Z1": "plain", "Z3": "plain", "Z5": "plain", "Z7": "plain",
           "Z2": "augmented", "Z4": "augmented", "Z6": "augmented", "Z8": "augmented",
           "K1": "plain", "K4": "plain", "K2": "augmented", "K3": "augmented",
+          **{f"{letter}{number}": "plain" if number % 2 else "augmented"
+             for letter in "RN" for number in range(1, 9)},
           "H0": "plain", "H4": "plain", "H5": "plain", "H7": "plain",
           "H1": "augmented", "H2": "augmented", "H3": "augmented", "H6": "augmented"}
 ENVELOPE = "envelope"

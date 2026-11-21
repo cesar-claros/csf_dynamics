@@ -309,6 +309,87 @@ def augrc_regret(tables: analyze_e.Tables, sets: tuple[str, ...],
     return pd.DataFrame(rows)
 
 
+def test_sections(frozen: dict, new: analyze_e.Tables, counts: dict[str, int],
+                  stage: str, derived: bool = False) -> list[tuple[str, str]]:
+    """The gates and the readings of every target for the runs of one stage.
+
+    Raises:
+        SystemExit: If gate M fails.
+    """
+    sections = []
+    if derived:
+        gate_m = "Dry run: the target comes from the old stored values."
+    else:
+        gap, skipped = metric_gap(new, counts)
+        if gap > METRIC_LIMIT:
+            raise SystemExit(f"gate M fails: the stored and the derived target "
+                             f"differ by {gap:.2e}")
+        gate_m = (f"**Gate M passes** on the sets of every target. Largest "
+                  f"difference between the stored and the derived target: "
+                  f"{gap:.2e} (limit {METRIC_LIMIT:.0e}). Rows that could not be "
+                  f"compared: {skipped}.")
+    meta, _, metrics = at.cells(new)
+    final = analyze_c.final_mask(meta)
+    last_metrics = metrics[final].droplevel("epoch")
+    accuracy = last_metrics["clock/val_accuracy"]
+    recipe = analyze_h.recipes_of(last_metrics.index)
+    failed = sorted(set(recipe[accuracy < MIN_ACCURACY]))
+    keep = ~recipe.isin(failed).to_numpy()
+    gate = pd.DataFrame({"recipe": recipe, "val_accuracy": accuracy})
+    sections.append(("Runs and gates", (
+        f"{len(accuracy)} of {len(STAGES[stage])} runs. Gate T: a run passes "
+        f"with a validation accuracy of at least {MIN_ACCURACY:.0%}:\n\n"
+        + block(gate.reset_index(), 3) + "\n\nRecipes that leave the decision "
+        f"rule: {', '.join(failed) or 'none'}.\n\n" + gate_m)))
+    for name, sets in GROUPS.items():
+        used = aimed(new, counts, sets) if derived else stored(new, sets)
+        scores = group_scores(used, sets, meta.index)[final].droplevel("epoch")
+        scores, kept_metrics = scores[keep], last_metrics[keep]
+        group = frozen["groups"][name]
+        picks, single, short = regrets(group, scores, kept_metrics)
+        recipes = by_recipe(single)
+        readings = pd.DataFrame([adds(recipes, choice) for choice in
+                                 (RULE, TWO, *QUESTION_3, *CONTROLS, STAND_IN)])
+        kinds = single.drop(columns="recipe").groupby(WITH).mean()
+        kinds.index = [WITH if on else WITHOUT for on in kinds.index]
+        reading, difference = analyze_h.read_shortlists(short)
+        title = (f"Target {name}: the outcome" if name == PRIMARY
+                 else f"Target {name} (secondary, no outcome letter)")
+        text = (
+            f"Sets: {', '.join(sets)}. One score: {group[ONE]}. Regret at the "
+            "final checkpoint, in points of the correct-only AUROC, with the "
+            "recipe as the unit:\n\n" + block(recipes.reset_index(), 2)
+            + "\n\nMeans: " + ", ".join(
+                f"{choice} {recipes[choice].mean():.2f}" for choice in recipes)
+            + "\n\nBy the use of label smoothing:\n\n"
+            + block(kinds.reset_index(names="recipes"), 2)
+            + "\n\nEach choice against the one fixed score, with the interval "
+            "over the recipes:\n\n" + block(readings, 2)
+            + "\n\nChoices:\n\n" + block(picks[[RULE, TWO, ONE, STAND_IN]]
+                                         .reset_index())
+            + f"\n\n- Question 1, the rule adds: {readings.loc[0, 'reading']}."
+            f"\n- Question 2, the rule holds: "
+            f"{'yes' if holds(recipes, RULE) else 'no'}.\n- Question 3, "
+            f"training statistics: {readings.loc[2, 'reading']}. Validation "
+            f"statistics: {readings.loc[3, 'reading']}.\n- Two rules by label "
+            f"smoothing (secondary): {readings.loc[1, 'reading']}.\n- Shortlists "
+            f"of size 3: fixed {short['fixed'].mean():.2f}, rule "
+            f"{short['rule'].mean():.2f}, random {short['random'].mean():.2f}; "
+            f"rule minus fixed {difference[0]:.2f} ({difference[1]:.2f} to "
+            f"{difference[2]:.2f}). {reading.capitalize()}.")
+        if "augrc_correct" in new.metrics:
+            augrc = augrc_regret(new, sets, picks, scores)
+            text += (
+                f"\n- Regret in AUGRC points: rule {augrc[RULE].mean():.3f}, one "
+                f"score {augrc[ONE].mean():.3f}. Runs where the best score by "
+                f"AUGRC is not the best by AUROC: {int(augrc['other_order'].sum())}"
+                f" of {len(augrc)}.")
+        if name == PRIMARY:
+            text += f"\n\n**Outcome: {outcome(recipes)}.**"
+        sections.append((title, text))
+    return sections
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("step", choices=("freeze", "test"))
@@ -360,76 +441,7 @@ def main() -> None:
         counts = set_counts(root, sorted(set(new.metrics["run"])))
         if frozen["images"] != counts:
             raise SystemExit("the image counts are not those of the frozen file")
-        if args.derived_target:
-            gate_m = "Dry run: the target comes from the old stored values."
-        else:
-            gap, skipped = metric_gap(new, counts)
-            if gap > METRIC_LIMIT:
-                raise SystemExit(f"gate M fails: the stored and the derived target "
-                                 f"differ by {gap:.2e}")
-            gate_m = (f"**Gate M passes** on the sets of every target. Largest "
-                      f"difference between the stored and the derived target: "
-                      f"{gap:.2e} (limit {METRIC_LIMIT:.0e}). Rows that could not be "
-                      f"compared: {skipped}.")
-        meta, _, metrics = at.cells(new)
-        final = analyze_c.final_mask(meta)
-        last_metrics = metrics[final].droplevel("epoch")
-        accuracy = last_metrics["clock/val_accuracy"]
-        recipe = analyze_h.recipes_of(last_metrics.index)
-        failed = sorted(set(recipe[accuracy < MIN_ACCURACY]))
-        keep = ~recipe.isin(failed).to_numpy()
-        gate = pd.DataFrame({"recipe": recipe, "val_accuracy": accuracy})
-        sections.append(("Runs and gates", (
-            f"{len(accuracy)} of {len(STAGES[stage])} runs. Gate T: a run passes "
-            f"with a validation accuracy of at least {MIN_ACCURACY:.0%}:\n\n"
-            + block(gate.reset_index(), 3) + "\n\nRecipes that leave the decision "
-            f"rule: {', '.join(failed) or 'none'}.\n\n" + gate_m)))
-        for name, sets in GROUPS.items():
-            used = aimed(new, counts, sets) if args.derived_target else stored(new, sets)
-            scores = group_scores(used, sets, meta.index)[final].droplevel("epoch")
-            scores, kept_metrics = scores[keep], last_metrics[keep]
-            group = frozen["groups"][name]
-            picks, single, short = regrets(group, scores, kept_metrics)
-            recipes = by_recipe(single)
-            readings = pd.DataFrame([adds(recipes, choice) for choice in
-                                     (RULE, TWO, *QUESTION_3, *CONTROLS, STAND_IN)])
-            kinds = single.drop(columns="recipe").groupby(WITH).mean()
-            kinds.index = [WITH if on else WITHOUT for on in kinds.index]
-            reading, difference = analyze_h.read_shortlists(short)
-            title = (f"Target {name}: the outcome" if name == PRIMARY
-                     else f"Target {name} (secondary, no outcome letter)")
-            text = (
-                f"Sets: {', '.join(sets)}. One score: {group[ONE]}. Regret at the "
-                "final checkpoint, in points of the correct-only AUROC, with the "
-                "recipe as the unit:\n\n" + block(recipes.reset_index(), 2)
-                + "\n\nMeans: " + ", ".join(
-                    f"{choice} {recipes[choice].mean():.2f}" for choice in recipes)
-                + "\n\nBy the use of label smoothing:\n\n"
-                + block(kinds.reset_index(names="recipes"), 2)
-                + "\n\nEach choice against the one fixed score, with the interval "
-                "over the recipes:\n\n" + block(readings, 2)
-                + "\n\nChoices:\n\n" + block(picks[[RULE, TWO, ONE, STAND_IN]]
-                                             .reset_index())
-                + f"\n\n- Question 1, the rule adds: {readings.loc[0, 'reading']}."
-                f"\n- Question 2, the rule holds: "
-                f"{'yes' if holds(recipes, RULE) else 'no'}.\n- Question 3, "
-                f"training statistics: {readings.loc[2, 'reading']}. Validation "
-                f"statistics: {readings.loc[3, 'reading']}.\n- Two rules by label "
-                f"smoothing (secondary): {readings.loc[1, 'reading']}.\n- Shortlists "
-                f"of size 3: fixed {short['fixed'].mean():.2f}, rule "
-                f"{short['rule'].mean():.2f}, random {short['random'].mean():.2f}; "
-                f"rule minus fixed {difference[0]:.2f} ({difference[1]:.2f} to "
-                f"{difference[2]:.2f}). {reading.capitalize()}.")
-            if "augrc_correct" in new.metrics:
-                augrc = augrc_regret(new, sets, picks, scores)
-                text += (
-                    f"\n- Regret in AUGRC points: rule {augrc[RULE].mean():.3f}, one "
-                    f"score {augrc[ONE].mean():.3f}. Runs where the best score by "
-                    f"AUGRC is not the best by AUROC: {int(augrc['other_order'].sum())}"
-                    f" of {len(augrc)}.")
-            if name == PRIMARY:
-                text += f"\n\n**Outcome: {outcome(recipes)}.**"
-            sections.append((title, text))
+        sections += test_sections(frozen, new, counts, stage, args.derived_target)
     text = (f"# Amendment A12, {part.label}: a rule from the statistics of each score"
             "\n\nThe inputs, the rules, the targets, and the decision rule were "
             "fixed before the new runs.\n"

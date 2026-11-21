@@ -1,9 +1,19 @@
 import itertools
 
+import pytest
 import torch
+from torchvision import models
 
-from dynamics.config import LAYERS, RECIPES
-from dynamics.model import build_model, extract, forward_stages, normalize
+from dynamics.config import ARCHS, LAYERS, RECIPES
+from dynamics.model import (
+    block_of,
+    build_model,
+    extract,
+    forward_stages,
+    head,
+    normalize,
+    weight_norms,
+)
 from dynamics.train import EpochSampler, learning_rate
 
 
@@ -17,6 +27,48 @@ def test_stage_features_and_logits_match_the_model():
     assert [p.shape[1] for p in pooled] == [64, 128, 256, 512]
     assert torch.allclose(logits, direct, atol=1e-6)
     assert torch.allclose(model.fc(pooled[-1]), logits)
+
+
+@pytest.mark.parametrize(("arch", "widths"), [
+    ("resnet18", [64, 128, 256, 512]), ("resnet50", [256, 512, 1024, 2048]),
+    ("densenet121", [256, 512, 1024, 1024])])
+def test_every_architecture_gives_four_stages_and_its_own_logits(arch, widths):
+    torch.manual_seed(0)
+    model = build_model(7, arch).eval()
+    images = torch.rand(3, 3, 64, 64)
+    with torch.no_grad():
+        pooled, logits = forward_stages(model, images)
+        direct = model(normalize(images))
+    assert [p.shape[1] for p in pooled] == widths
+    # The last stage is the penultimate feature of the model's own forward pass.
+    assert torch.allclose(logits, direct, atol=1e-5)
+    assert torch.allclose(head(model)(pooled[-1]), logits)
+    assert head(model).in_features == widths[-1] and head(model).out_features == 7
+
+
+@pytest.mark.parametrize("arch", ARCHS)
+def test_weight_norms_count_every_convolution_once(arch):
+    model = build_model(5, arch)
+    norms = weight_norms(model)
+    convs = [m for m in model.modules() if isinstance(m, torch.nn.Conv2d)]
+    total = sum(float(m.weight.detach().double().pow(2).sum()) for m in convs)
+    assert norms["conv_norm"] ** 2 == pytest.approx(total)
+    blocks = [norms[f"conv_norm_{name}"] for name in ("stem", *LAYERS)]
+    assert all(value > 0 for value in blocks)
+    assert sum(value ** 2 for value in blocks) == pytest.approx(total)
+    assert norms["fc_norm"] == pytest.approx(float(head(model).weight.norm()))
+    assert set(norms) == {"conv_norm", "bn_scale_norm", "fc_norm",
+                          *(f"conv_norm_{name}" for name in ("stem", *LAYERS))}
+
+
+def test_blocks_of_the_two_families_and_unknown_architecture():
+    assert block_of("conv1") == "stem" and block_of("layer3.0.downsample.0") == "stage3"
+    assert block_of("features.conv0") == "stem"
+    assert block_of("features.denseblock2.denselayer1.conv1") == "stage2"
+    assert block_of("features.transition1.conv") == "stage2"
+    assert isinstance(build_model(3, "densenet121"), models.DenseNet)
+    with pytest.raises(ValueError, match="unknown architecture"):
+        build_model(3, "vit_b_16")
 
 
 def test_extract_is_deterministic_and_ordered():

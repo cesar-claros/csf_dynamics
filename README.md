@@ -35,6 +35,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_u.py` | Amendment A8: tests the frozen all-tiers rule of amendment A7 on four more recipes, with a second fit as a secondary rule (local). |
 | `dynamics/analyze_v.py` | Amendments A9 and A10: freezes and tests the rules for the correct-only target of the paper. Part 1 has 10 classes, part 2 has 100 classes, and part 3 has 10 classes without label smoothing (local). |
 | `dynamics/analyze_y.py` | Amendment A11: checks if the fixed NCI score stays within 1 point at a weight decay of 5e-3 with 100 classes. It has no rule (local). |
+| `dynamics/analyze_r.py` | Amendment A13: applies the frozen rule of amendment A12 part 1 to runs of another architecture (ResNet-50, DenseNet-121), with no new fit (local). |
 | `dynamics/analyze_z.py` | Amendment A12: freezes and tests the rule from the statistics of each score, part 1 with 10 classes and part 2 with 100 classes, on the far sets and on two secondary targets (local). |
 | `dynamics/analyze_loro.py` | Exploratory check, post hoc: rules from each set of ID-only metrics with one recipe left out, against choices with no metric (local). |
 | `dynamics/analyze_factors.py` | Exploratory check, post hoc: how much each recipe setting changes the order of the scores, on matched pairs of recipes (local). |
@@ -418,6 +419,48 @@ uv run python -m dynamics.analyze_z test --part 1 --results-root dyn_results
 
 ```bash
 uv run python -m dynamics.analyze_z test --part 2 --results-root dyn_results
+```
+
+### Amendment A13: the frozen rule on other architectures (10 classes)
+
+The plan is `../documentation/other_architecture_replication_amendment_2026-11-21.md`. The recipes R1 to R8 (ResNet-50) and N1 to N8 (DenseNet-121) are the recipes of stage `z` with another network. Nothing is fitted: the analysis reads the frozen file `dynamics/frozen/stage_z_rules.json`. Each run is evaluated at 8 checkpoints. A run saves its 23 checkpoints, so stage `r` needs about 36 GB of disk and stage `n` about 12 GB.
+
+**1. The two first runs.** They give the time of a run and show if every score has a value on the larger features. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage r_first --eval-epochs 20 40 60 80 100 120 160 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_r_first.log 2>&1 &
+```
+
+```bash
+nohup python -m dynamics.run_stage --stage n_first --eval-epochs 20 40 60 80 100 120 160 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_n_first.log 2>&1 &
+```
+
+**2. The two stages,** 16 runs each. A run that is complete is skipped, so the first runs are not repeated:
+
+```bash
+nohup python -m dynamics.run_stage --stage r --eval-epochs 20 40 60 80 100 120 160 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_r.log 2>&1 &
+```
+
+```bash
+nohup python -m dynamics.run_stage --stage n --eval-epochs 20 40 60 80 100 120 160 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --imagenette-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_n.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_r.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/R?_seed?
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_n.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/N?_seed?
+```
+
+**3. The analysis, local.** After `tar xzf dyn_stage_r.tgz -C dyn_results` and the same for stage `n`:
+
+```bash
+uv run python -m dynamics.analyze_r --part 1 --results-root dyn_results
+```
+
+```bash
+uv run python -m dynamics.analyze_r --part 2 --results-root dyn_results
 ```
 
 ### Stage H: 100 classes

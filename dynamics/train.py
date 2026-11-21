@@ -92,7 +92,7 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
     dataset, classes = training_set(paths, spec.held_out, image_size, recipe.augment,
                                     limit)
     torch.manual_seed(spec.seed)
-    model = build_model(len(classes)).to(device)
+    model = build_model(len(classes), recipe.arch).to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=recipe.lr, momentum=MOMENTUM,
                                 weight_decay=recipe.weight_decay)
     epochs = recipe.epochs if epochs is None else epochs
@@ -114,7 +114,7 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
     def checkpoint(epoch: int) -> None:
         state = {key: value.cpu() for key, value in model.state_dict().items()}
         save_atomic({"model": state, "epoch": epoch, "run": spec.name,
-                     "classes": classes},
+                     "classes": classes, "arch": recipe.arch},
                     checkpoint_path(out_root, spec.name, epoch))
 
     start = 0

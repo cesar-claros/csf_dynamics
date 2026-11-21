@@ -33,7 +33,7 @@ from dynamics.descriptors import (
     validation_statistics,
 )
 from dynamics.metrics import auroc, error_metrics, set_metrics
-from dynamics.model import build_model, extract, weight_norms
+from dynamics.model import build_model, extract, head, weight_norms
 from dynamics.paper_api import NC_METRICS, paper_nc
 from dynamics.scores import NO_FIT_CSFS, all_scores, layer_scores
 
@@ -266,7 +266,8 @@ def evaluate_features(features: dict[str, dict], w: torch.Tensor, b: torch.Tenso
 
 def load_model(path: Path, device: torch.device) -> tuple[torch.nn.Module, dict]:
     state = torch.load(path, map_location="cpu")
-    model = build_model(len(state["classes"]))
+    # A checkpoint from before amendment A13 has no `arch`: it is a ResNet-18.
+    model = build_model(len(state["classes"]), state.get("arch", "resnet18"))
     model.load_state_dict(state["model"])
     return model.to(device).eval(), state
 
@@ -314,8 +315,8 @@ def evaluate_run(spec: RunSpec, paths: DataPaths, out_root: Path,
             target = folder / "features" / f"epoch_{epoch:03d}.pt"
             target.parent.mkdir(parents=True, exist_ok=True)
             torch.save(features, target)
-        out = evaluate_features(features, model.fc.weight.detach().float().cpu(),
-                                model.fc.bias.detach().float().cpu(),
+        out = evaluate_features(features, head(model).weight.detach().float().cpu(),
+                                head(model).bias.detach().float().cpu(),
                                 len(state["classes"]), device, precision,
                                 reference_check)
         out["descriptors"] += [{"group": "weights", "name": name, "layer": "",
@@ -367,7 +368,7 @@ def validation_pass(spec: RunSpec, paths: DataPaths, out_root: Path,
     for epoch in todo:
         model, state = load_model(checkpoint_path(out_root, spec.name, epoch), device)
         val = extract(model, dataset, device, workers=0)
-        rows = validation_statistics(val, model.fc.weight.detach().float().cpu(),
+        rows = validation_statistics(val, head(model).weight.detach().float().cpu(),
                                      len(state["classes"]), device)
         out = {"run": spec.name, "epoch": epoch, "n_classes": len(state["classes"]),
                "descriptors": rows}

@@ -185,3 +185,29 @@ def test_training_resumes_after_an_interruption(tiny_data, tmp_path, monkeypatch
         "epoch_000.pt", "epoch_001.pt", "epoch_002.pt"]
     with (folder / "train_log.csv").open() as handle:
         assert [row[0] for row in csv.reader(handle)] == ["epoch", "1", "2"]
+
+
+def test_a_run_of_another_architecture_trains_and_evaluates(tiny_data, tmp_path,
+                                                            monkeypatch):
+    from dynamics import evaluate
+    from dynamics.config import checkpoint_path
+    from dynamics.model import head
+    monkeypatch.setattr("sys.argv", [
+        "run_stage", "--only", "N1_seed0", "--out-root", str(tmp_path),
+        "--imagenette-dir", str(tiny_data.imagenette), "--imagewoof-dir",
+        str(tiny_data.imagewoof), "--textures-dir", str(tiny_data.textures),
+        "--epochs", "1", "--image-size", "32", "--workers", "0", "--device", "cpu"])
+    run_stage.main()
+    folder = tmp_path / "runs" / "N1_seed0"
+    assert json.loads((folder / "meta.json").read_text())["arch"] == "densenet121"
+    model, state = evaluate.load_model(checkpoint_path(tmp_path, "N1_seed0", 1),
+                                       torch.device("cpu"))
+    assert state["arch"] == "densenet121" and head(model).in_features == 1024
+    out = json.loads((folder / "results_f64" / "epoch_001.json").read_text())
+    assert {row["csf"] for row in out["metrics"]} == set(ALL_CSFS)
+    assert all("auroc_correct" in row for row in out["metrics"]
+               if row["set"] != "id_errors")
+    # The weight norms of the evaluation use the blocks of this architecture.
+    names = {row["name"] for row in out["descriptors"] if row["group"] == "weights"}
+    assert {"conv_norm", "bn_scale_norm", "fc_norm"} <= names
+

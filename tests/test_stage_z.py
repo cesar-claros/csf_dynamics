@@ -204,20 +204,24 @@ def check_part(run, write, part, path, new, columns, valid):
     assert "Two rules by label smoothing" in text and "Regret in AUGRC points" in text
 
 
-def test_part_1_freeze_and_test_on_fabricated_runs(tmp_path, monkeypatch):
+def part_1_world(tmp_path, monkeypatch):
+    """Fabricated earlier 10-class runs, for the fit of part 1.
+
+    Returns:
+        `write`, `run`, the columns of a new evaluation, and the earlier runs.
+    """
     base = rules.load()["targets"]["far"]["rules"]["all"].columns
     wide = [f"valid/{name}@stage4" for name in ("cdnv", "trace_ratio", "span_share")]
     old = [RunSpec("A", 0), RunSpec("B", 0)]
     late = [RunSpec("C5", 0), RunSpec("C6", 0)]          # C5 has label smoothing
     t, u = [RunSpec("T1", 0), RunSpec("T2", 0)], [RunSpec("U1", 0), RunSpec("U2", 0)]
     v, x = [RunSpec("V1", 0), RunSpec("V3", 0)], [RunSpec("X1", 0), RunSpec("X2", 0)]
-    new = [RunSpec("Z1", 0), RunSpec("Z5", 0)]
     every = old + late + t + u + v + x
     for name, runs in (("e_main", old), ("c", []), ("c2", late),
                        ("a7_train", old + late), ("t", t),
                        ("a8_train", old + late + t), ("u", u),
                        ("a9_train", old + late + t + u), ("v", v), ("x", x),
-                       ("a12_train", every), ("z", new)):
+                       ("a12_train", every)):
         monkeypatch.setitem(STAGES, name, runs)
     write, run = world(tmp_path, monkeypatch)
     for spec in old:              # the first runs have two evaluations
@@ -235,8 +239,15 @@ def test_part_1_freeze_and_test_on_fabricated_runs(tmp_path, monkeypatch):
                 {"run": spec.name, "epoch": epoch, "descriptors": rows}))
     for spec in t + u + v + x:
         write(spec, results_folder(suite="step0"), base + wide, True)
+    return write, run, base + wide, every
+
+
+def test_part_1_freeze_and_test_on_fabricated_runs(tmp_path, monkeypatch):
+    write, run, columns, every = part_1_world(tmp_path, monkeypatch)
+    new = [RunSpec("Z1", 0), RunSpec("Z5", 0)]
+    monkeypatch.setitem(STAGES, "z", new)
     path = tmp_path / "z.json"
-    check_part(run, write, 1, path, new, base + wide, True)
+    check_part(run, write, 1, path, new, columns, True)
     frozen = analyze_z.load(path)
     assert frozen["training_runs"] == sorted(spec.name for spec in every)
     assert frozen["groups"]["far"]["baseline_runs"] == 12
