@@ -4,8 +4,10 @@ Protocol: ../documentation/imagenette_dynamics_protocol_2026-11-10.md
 """
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, replace
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -160,6 +162,49 @@ for _letter, _arch in A13_ARCHS.items():
 #: Amendment A13: the checkpoints that are evaluated.
 A13_EVAL_EPOCHS = (20, 40, 60, 80, 100, 120, 160, 200)
 
+#: Amendment A14: recipes drawn at random, once, by `dynamics/draw_recipes.py`.
+#: P01 to P48 are part 1 (Imagenette). Q01 to Q48 are part 2 (new ID classes).
+FROZEN_DIR = Path(__file__).resolve().parent / "frozen"
+A14_RECIPES_PATH = FROZEN_DIR / "a14_recipes.json"
+A14_CLASS_SETS_PATH = FROZEN_DIR / "a14_class_sets.json"
+for _name, _settings in json.loads(A14_RECIPES_PATH.read_text())["recipes"].items():
+    RECIPES[_name] = Recipe(**_settings)
+#: Amendment A14: recipes of one class set in part 2, and the saved checkpoint.
+A14_PER_SET = 12
+A14_EVAL_EPOCHS = (EPOCHS,)
+#: Image counts of Imagenette. Each class set of amendment A14 takes them.
+A14_TRAIN_IMAGES = 9469
+A14_VAL_IMAGES = 3925
+#: The classes of Imagenette, in the order of their folders.
+IMAGENETTE_CLASSES = ("n01440764", "n02102040", "n02979186", "n03000684",
+                      "n03028079", "n03394916", "n03417042", "n03425413",
+                      "n03445777", "n03888257")
+
+
+def class_set_of(recipe: str) -> int | None:
+    """Number of the class set (1 to 4) of a recipe of amendment A14 part 2."""
+    if not re.fullmatch(r"Q\d\d", recipe):
+        return None
+    return (int(recipe[1:]) - 1) // A14_PER_SET + 1
+
+
+@cache
+def a14_class_sets() -> dict[int, tuple[str, ...]]:
+    """The frozen class sets of amendment A14 part 2, by number."""
+    stored = json.loads(A14_CLASS_SETS_PATH.read_text())["sets"]
+    return {int(number): tuple(classes) for number, classes in stored.items()}
+
+
+def expected_classes(recipe: str) -> tuple[str, ...] | None:
+    """The ID classes that a recipe of amendment A14 must train on.
+
+    Returns None for a recipe of another amendment: those have no such check.
+    """
+    if re.fullmatch(r"P\d\d", recipe):
+        return IMAGENETTE_CLASSES
+    number = class_set_of(recipe)
+    return None if number is None else a14_class_sets()[number]
+
 
 @dataclass(frozen=True)
 class RunSpec:
@@ -181,7 +226,7 @@ def parse_run(name: str) -> RunSpec:
     Raises:
         ValueError: If the name does not describe a run.
     """
-    match = re.fullmatch(r"([A-Z]\d?)_seed(\d+)(?:_hold(\d+))?", name)
+    match = re.fullmatch(r"([A-Z]\d{0,2})_seed(\d+)(?:_hold(\d+))?", name)
     if match is None or match.group(1) not in RECIPES:
         raise ValueError(f"not a run name: {name}")
     hold = match.group(3)
@@ -231,6 +276,16 @@ STAGES: dict[str, list[RunSpec]] = {
           for seed in range(5)],
 }
 
+
+#: Amendment A14: one run for each recipe. Part 1 is stage `p`. Part 2 has one
+#: stage for each class set, because each has its own ID folder. Stage `q` is all
+#: of part 2, for the analysis: `run_stage` refuses it, since no folder fits.
+STAGES["p"] = [RunSpec(f"P{number:02d}", 0) for number in range(1, 49)]
+for _set in range(1, 5):
+    STAGES[f"q{_set}"] = [RunSpec(f"Q{number:02d}", 0) for number in range(
+        (_set - 1) * A14_PER_SET + 1, _set * A14_PER_SET + 1)]
+STAGES["q"] = [spec for _set in range(1, 5) for spec in STAGES[f"q{_set}"]]
+STAGES["q_first"] = [RunSpec("Q01", 0)]
 
 #: Amendment A7: the earlier 10-class runs that the frozen rules are fitted on.
 STAGES["a7_train"] = [*STAGES["e_main"], *STAGES["c"], *STAGES["c2"],

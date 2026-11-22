@@ -36,6 +36,9 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_v.py` | Amendments A9 and A10: freezes and tests the rules for the correct-only target of the paper. Part 1 has 10 classes, part 2 has 100 classes, and part 3 has 10 classes without label smoothing (local). |
 | `dynamics/analyze_y.py` | Amendment A11: checks if the fixed NCI score stays within 1 point at a weight decay of 5e-3 with 100 classes. It has no rule (local). |
 | `dynamics/analyze_r.py` | Amendment A13: applies the frozen rule of amendment A12 part 1 to runs of another architecture (ResNet-50, DenseNet-121), with no new fit (local). |
+| `dynamics/draw_recipes.py` | Amendment A14: draws the 96 recipes of the two parts, once, into `dynamics/frozen/a14_recipes.json` (local). |
+| `dynamics/build_class_sets.py` | Amendment A14: draws the four new ID class sets (local, once) and builds their folders from the 100-class folder, with gate D (HPC). |
+| `dynamics/analyze_p.py` | Amendment A14: applies the frozen rule of amendment A12 part 1 to recipes drawn at random, on Imagenette and on new ID classes, with no new fit (local). |
 | `dynamics/analyze_z.py` | Amendment A12: freezes and tests the rule from the statistics of each score, part 1 with 10 classes and part 2 with 100 classes, on the far sets and on two secondary targets (local). |
 | `dynamics/analyze_loro.py` | Exploratory check, post hoc: rules from each set of ID-only metrics with one recipe left out, against choices with no metric (local). |
 | `dynamics/analyze_factors.py` | Exploratory check, post hoc: how much each recipe setting changes the order of the scores, on matched pairs of recipes (local). |
@@ -462,6 +465,80 @@ uv run python -m dynamics.analyze_r --part 1 --results-root dyn_results
 ```bash
 uv run python -m dynamics.analyze_r --part 2 --results-root dyn_results
 ```
+
+### Amendment A14: recipes drawn at random and new ID classes (10 classes)
+
+The plan is `../documentation/random_recipes_new_classes_amendment_2026-11-22.md`. Nothing is fitted: the analysis reads the frozen file `dynamics/frozen/stage_z_rules.json`. The network is ResNet-18, and each recipe has one run.
+
+- **Recipes.** P01 to P48 (part 1) and Q01 to Q48 (part 2) are in `dynamics/frozen/a14_recipes.json`. `dynamics/draw_recipes.py` drew them once.
+- **Class sets.** The four sets of part 2 are in `dynamics/frozen/a14_class_sets.json`. Each has 10 ImageNet classes that are not Imagenette or Imagewoof classes, with 9,469 training and 3,925 validation images.
+- **Checkpoints.** `--save-epochs 200` keeps only the final checkpoint, about 45 MB for a run. Without it a run keeps 23 checkpoints, about 1 GB.
+- **Time.** About 7.5 minutes for a run, so about 6 GPU-hours for each part.
+- **The ID folder is checked.** `run_stage` stops before any training if the classes of the ID folder are not those of the runs. So a stage of part 2 runs only with the folder of its class set.
+
+**1. Build the four class sets, once.** It needs the 100-class folder of Stage H. The script copies about 53,600 small images (use `--link` for symbolic links). It prints the hash of the frozen file, and the image counts, the hash of the split, and gate D for each set:
+
+```bash
+export A14_SETS_DIR=/path/to/a14_class_sets
+```
+
+```bash
+python -m dynamics.build_class_sets --source $IMAGENET100_DIR --out $A14_SETS_DIR
+```
+
+**2. The first run of part 2.** It shows that the new folders work and gives the accuracy on new classes. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage q_first --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $A14_SETS_DIR/set1 --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_q_first.log 2>&1 &
+```
+
+**3. Part 1: the 48 runs of stage `p`,** on Imagenette:
+
+```bash
+nohup python -m dynamics.run_stage --stage p --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $IMAGENETTE_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_p.log 2>&1 &
+```
+
+**4. Part 2: the four stages `q1` to `q4`,** 12 runs each, each with the folder of its class set. The first run is not repeated:
+
+```bash
+nohup python -m dynamics.run_stage --stage q1 --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $A14_SETS_DIR/set1 --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_q1.log 2>&1 &
+```
+
+```bash
+nohup python -m dynamics.run_stage --stage q2 --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $A14_SETS_DIR/set2 --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_q2.log 2>&1 &
+```
+
+```bash
+nohup python -m dynamics.run_stage --stage q3 --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $A14_SETS_DIR/set3 --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_q3.log 2>&1 &
+```
+
+```bash
+nohup python -m dynamics.run_stage --stage q4 --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-dir $A14_SETS_DIR/set4 --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_q4.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_p.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/P??_seed0
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_q.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/Q??_seed0
+```
+
+**5. The analysis, local.** After `tar xzf dyn_stage_p.tgz -C dyn_results` and the same for stage `q`:
+
+```bash
+uv run python -m dynamics.analyze_p --part 1 --results-root dyn_results
+```
+
+```bash
+uv run python -m dynamics.analyze_p --part 2 --results-root dyn_results
+```
+
+```bash
+uv run python -m dynamics.analyze_p --together --results-root dyn_results
+```
+
+The analysis stops if a run of the stage has no results. A recipe is not replaced. If the training of a run failed (for example, a loss that is not finite), add `--count-missing-as-failed`: the recipe then counts as a failure of gate T.
 
 ### Stage H: 100 classes
 

@@ -2,6 +2,7 @@
 
 Writes under <out-root>/runs/<run>/: checkpoints/epoch_XXX.pt at the protocol
 epochs (epoch 0 is the random start), train_log.csv, meta.json, and train.done.
+`keep_epochs` replaces the protocol epochs with a chosen list.
 A stopped run resumes from last.pt. The data order of an epoch depends only on the
 seed and the epoch, so it is the same after a resume. The augmentation draws are
 not, so a resumed run is not bit-identical to an uninterrupted run.
@@ -79,8 +80,17 @@ def save_atomic(payload: dict, path: Path) -> None:
 
 def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.device,
               epochs: int | None = None, workers: int = 8, limit: int | None = None,
-              image_size: int = IMAGE_SIZE, batch_size: int = BATCH_SIZE) -> None:
-    """Train one run. Does nothing if the run is already complete."""
+              image_size: int = IMAGE_SIZE, batch_size: int = BATCH_SIZE,
+              keep_epochs: list[int] | None = None) -> None:
+    """Train one run. Does nothing if the run is already complete.
+
+    Args:
+        keep_epochs: The checkpoints to keep, in place of the protocol epochs. The
+            list must hold the last epoch. Epoch 0 is kept only if it is listed.
+
+    Raises:
+        ValueError: If `keep_epochs` does not hold the last epoch.
+    """
     folder = run_dir(out_root, spec.name)
     if (folder / "train.done").exists():
         print(f"[train] {spec.name}: already complete", flush=True)
@@ -103,7 +113,10 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
                         num_workers=workers, pin_memory=use_amp,
                         persistent_workers=workers > 0)
     steps_per_epoch = len(loader)
-    kept = set(checkpoint_epochs(epochs))
+    kept = set(checkpoint_epochs(epochs) if keep_epochs is None else keep_epochs)
+    if epochs not in kept:
+        raise ValueError(f"the kept checkpoints {sorted(kept)} do not hold the last "
+                         f"epoch {epochs}")
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "meta.json").write_text(json.dumps({
         **vars(recipe), "run": spec.name, "recipe": spec.recipe, "seed": spec.seed,
@@ -133,7 +146,8 @@ def train_run(spec: RunSpec, paths: DataPaths, out_root: Path, device: torch.dev
                 [rows[0], *(row for row in rows[1:] if int(row[0]) <= start)])
         print(f"[train] {spec.name}: resume after epoch {start}", flush=True)
     else:
-        checkpoint(0)
+        if 0 in kept:
+            checkpoint(0)
         with log.open("w", newline="") as handle:
             csv.writer(handle).writerow(["epoch", "lr", "loss", "accuracy", "seconds"])
 

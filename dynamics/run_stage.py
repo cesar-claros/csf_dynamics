@@ -27,8 +27,10 @@ from dynamics.config import (
     DataPaths,
     RunSpec,
     checkpoint_epochs,
+    expected_classes,
     parse_run,
 )
+from dynamics.data import class_folders
 from dynamics.evaluate import evaluate_run, validation_pass
 from dynamics.train import train_run
 
@@ -37,6 +39,16 @@ def recheck_epochs(epochs: int) -> list[int]:
     """An early, a middle, and the final checkpoint."""
     kept = checkpoint_epochs(epochs)
     return sorted({kept[min(4, len(kept) - 1)], kept[len(kept) // 2], kept[-1]})
+
+
+def wrong_folder(specs: list[RunSpec], id_dir: Path) -> list[str]:
+    """Runs of amendment A14 whose ID classes are not those of the folder."""
+    wanted = {spec.name: expected_classes(spec.recipe) for spec in specs}
+    if not any(wanted.values()):
+        return []
+    found = tuple(class_folders(Path(id_dir) / "train"))
+    return [name for name, classes in wanted.items()
+            if classes not in (None, found)]
 
 
 def main() -> None:
@@ -71,6 +83,9 @@ def main() -> None:
                              "checkpoints (amendment A7); needs the ID folder only")
     parser.add_argument("--eval-epochs", type=int, nargs="+", metavar="EPOCH",
                         help="evaluate only these checkpoints (default: every one)")
+    parser.add_argument("--save-epochs", type=int, nargs="+", metavar="EPOCH",
+                        help="keep only these checkpoints of a new run (default: "
+                             "the protocol epochs); the list needs the last epoch")
     parser.add_argument("--reference-check", action="store_true",
                         help="also fit every CSF on a training subset and on one "
                              "half of the validation set; needs --suite")
@@ -110,6 +125,10 @@ def main() -> None:
                       Path(args.imagewoof_dir) if args.imagewoof_dir else None,
                       Path(args.textures_dir) if args.textures_dir else None,
                       tuple(extra), args.extra_limit)
+    mismatch = wrong_folder(specs, paths.imagenette)
+    if mismatch and not smoke:
+        parser.error("the ID folder does not have the classes of these runs: "
+                     + ", ".join(mismatch))
     out_root, device = Path(args.out_root), torch.device(args.device)
     shared = {"workers": args.workers, "limit": args.limit,
               "image_size": args.image_size}
@@ -130,7 +149,8 @@ def main() -> None:
                                  suite=args.suite, **shared)
                 continue
             if not args.skip_train:
-                train_run(spec, paths, out_root, device, epochs=args.epochs, **shared)
+                train_run(spec, paths, out_root, device, epochs=args.epochs,
+                          keep_epochs=args.save_epochs, **shared)
             if not args.skip_eval:
                 evaluate_run(spec, paths, out_root, device,
                              epochs=args.eval_epochs, precision=args.precision,
