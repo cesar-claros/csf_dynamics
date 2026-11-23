@@ -36,7 +36,9 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_v.py` | Amendments A9 and A10: freezes and tests the rules for the correct-only target of the paper. Part 1 has 10 classes, part 2 has 100 classes, and part 3 has 10 classes without label smoothing (local). |
 | `dynamics/analyze_y.py` | Amendment A11: checks if the fixed NCI score stays within 1 point at a weight decay of 5e-3 with 100 classes. It has no rule (local). |
 | `dynamics/analyze_r.py` | Amendment A13: applies the frozen rule of amendment A12 part 1 to runs of another architecture (ResNet-50, DenseNet-121), with no new fit (local). |
-| `dynamics/draw_recipes.py` | Amendment A14: draws the 96 recipes of the two parts, once, into `dynamics/frozen/a14_recipes.json` (local). |
+| `dynamics/draw_recipes.py` | Amendments A14 and A15: draws the recipes, once, into `dynamics/frozen/a14_recipes.json` and `a15_recipes.json` (local). |
+| `dynamics/build_sets_parquet.py` | Amendment A15: lists the image counts of the ImageNet classes (HPC), draws the 32 new ID class sets (local, once), and builds their folders from the parquet files, with gate D (HPC). |
+| `dynamics/analyze_s.py` | Amendment A15: fits and freezes a rule on runs of several ID sets and a choice from the recipe alone, and tests them on new class sets with the class set as the unit (local). |
 | `dynamics/build_class_sets.py` | Amendment A14: draws the four new ID class sets (local, once) and builds their folders from the 100-class folder, with gate D (HPC). |
 | `dynamics/analyze_p.py` | Amendment A14: applies the frozen rule of amendment A12 part 1 to recipes drawn at random, on Imagenette and on new ID classes, with no new fit (local). |
 | `dynamics/analyze_z.py` | Amendment A12: freezes and tests the rule from the statistics of each score, part 1 with 10 classes and part 2 with 100 classes, on the far sets and on two secondary targets (local). |
@@ -539,6 +541,64 @@ uv run python -m dynamics.analyze_p --together --results-root dyn_results
 ```
 
 The analysis stops if a run of the stage has no results. A recipe is not replaced. If the training of a run failed (for example, a loss that is not finite), add `--count-missing-as-failed`: the recipe then counts as a failure of gate T.
+
+### Amendment A15: a rule fitted on several ID sets against a choice from the recipe (10 classes)
+
+The plan is `../documentation/several_id_sets_rule_amendment_2026-11-23.md`. The rule under test and the choice by cell are in the frozen file `dynamics/frozen/stage_s_rules.json`. They were fitted on the 186 earlier ResNet-18 runs. The test has 32 new class sets with 4 recipes each (S001 to S128, in `dynamics/frozen/a15_recipes.json`), and the class set is the unit. Each run takes about 7.5 minutes, so the stage takes about 16 GPU-hours.
+
+**1. The image counts of the ImageNet classes, on the HPC.** The draw of the class sets needs them. The script reads the labels and the file names of the parquet files, not the images. It needs `pyarrow`, as the build of the subset of Stage H does. Set `PARQUET_DIR` as for Stage H:
+
+```bash
+python -m dynamics.build_sets_parquet --count --parquet-dir $PARQUET_DIR --out imagenet_class_counts.json
+```
+
+Put `imagenet_class_counts.json` in the local `code/` folder.
+
+**2. The draw of the class sets, local, once.** It writes `dynamics/frozen/a15_class_sets.json`. Then set `CLASS_SETS_SHA256` in `dynamics/analyze_s.py` to the printed hash, and commit and push before any run:
+
+```bash
+uv run python -m dynamics.build_sets_parquet --draw --counts imagenet_class_counts.json
+```
+
+**3. Build the 32 folders, on the HPC,** after a pull. The script reads the images of 320 classes from the parquet files and writes about 430,000 small images (about 5 GB). It prints the hash of the frozen file, and the image counts, the hash of the split, and gate D for each set:
+
+```bash
+export A15_SETS_DIR=/path/to/a15_class_sets
+```
+
+```bash
+nohup python -m dynamics.build_sets_parquet --parquet-dir $PARQUET_DIR --out $A15_SETS_DIR > dyn_s_build.log 2>&1 &
+```
+
+**4. The first run.** `--id-root` gives each run the folder of its class set (`set01` to `set32`). Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.run_stage --stage s_first --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-root $A15_SETS_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_s_first.log 2>&1 &
+```
+
+**5. The 128 runs of stage `s`.** The first run is not repeated:
+
+```bash
+nohup python -m dynamics.run_stage --stage s --save-epochs 200 --eval-epochs 200 --suite step0 --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT --id-root $A15_SETS_DIR --imagewoof-dir $IMAGEWOOF_DIR --textures-dir $TEXTURES_DIR > dyn_s.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_stage_s.tgz --exclude=checkpoints --exclude=features --exclude=last.pt runs/S???_seed0
+```
+
+**6. The analysis, local.** After `tar xzf dyn_stage_s.tgz -C dyn_results`:
+
+```bash
+uv run python -m dynamics.analyze_s test --results-root dyn_results
+```
+
+The analysis stops if a run of the stage has no results. If the training of a run failed, add `--count-missing-as-failed`.
+
+**The fit, for the record (local, done).** `freeze` wrote the frozen file once and does not write it again. `read` is the check of the fit: it leaves one class set of amendment A14 out at a time and gives the numbers of the read in the plan:
+
+```bash
+uv run python -m dynamics.analyze_s read --results-root dyn_results
+```
 
 ### Stage H: 100 classes
 

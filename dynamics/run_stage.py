@@ -29,6 +29,7 @@ from dynamics.config import (
     checkpoint_epochs,
     expected_classes,
     parse_run,
+    set_folder,
 )
 from dynamics.data import class_folders
 from dynamics.evaluate import evaluate_run, validation_pass
@@ -41,14 +42,37 @@ def recheck_epochs(epochs: int) -> list[int]:
     return sorted({kept[min(4, len(kept) - 1)], kept[len(kept) // 2], kept[-1]})
 
 
-def wrong_folder(specs: list[RunSpec], id_dir: Path) -> list[str]:
-    """Runs of amendment A14 whose ID classes are not those of the folder."""
-    wanted = {spec.name: expected_classes(spec.recipe) for spec in specs}
-    if not any(wanted.values()):
-        return []
-    found = tuple(class_folders(Path(id_dir) / "train"))
-    return [name for name, classes in wanted.items()
-            if classes not in (None, found)]
+def id_folder(spec: RunSpec, id_dir: Path | None, id_root: Path | None) -> Path:
+    """The ID folder of one run.
+
+    With `id_root`, a run that has a class set takes the folder of its set below
+    it. Every other run takes `id_dir`.
+
+    Raises:
+        ValueError: If the run has no folder.
+    """
+    name = set_folder(spec.recipe)
+    if id_root is not None and name is not None:
+        return Path(id_root) / name
+    if id_dir is None:
+        raise ValueError(f"{spec.name} has no class set below --id-root; give "
+                         "--id-dir")
+    return Path(id_dir)
+
+
+def wrong_folder(specs: list[RunSpec], id_dir: Path | None,
+                 id_root: Path | None = None) -> list[str]:
+    """Runs of amendments A14 and A15 whose ID classes are not those of their
+    folder."""
+    wrong = []
+    for spec in specs:
+        wanted = expected_classes(spec.recipe)
+        if wanted is None:
+            continue
+        folder = id_folder(spec, id_dir, id_root) / "train"
+        if not folder.is_dir() or tuple(class_folders(folder)) != wanted:
+            wrong.append(spec.name)
+    return wrong
 
 
 def main() -> None:
@@ -57,8 +81,11 @@ def main() -> None:
     parser.add_argument("--only", nargs="+", metavar="RUN",
                         help="run names, in place of or within a stage")
     parser.add_argument("--out-root", required=True)
-    parser.add_argument("--imagenette-dir", "--id-dir", required=True,
+    parser.add_argument("--imagenette-dir", "--id-dir",
                         help="ID dataset folder with train/ and val/ class folders")
+    parser.add_argument("--id-root",
+                        help="folder with one ID folder for each class set (set1, "
+                             "set01, ...); each run takes the folder of its set")
     parser.add_argument("--imagewoof-dir")
     parser.add_argument("--textures-dir")
     parser.add_argument("--skip-train", action="store_true")
@@ -100,6 +127,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.stage is None and not args.only:
         parser.error("give --stage or --only")
+    if not args.imagenette_dir and not args.id_root:
+        parser.error("give --id-dir or --id-root")
     smoke = (args.epochs, args.image_size, args.limit) != (None, IMAGE_SIZE, None)
     if not smoke and not args.valstats_only and not (args.imagewoof_dir
                                                      and args.textures_dir):
@@ -121,11 +150,13 @@ def main() -> None:
     if args.only:
         wanted = [parse_run(name) for name in args.only]
         specs = [spec for spec in specs if spec in wanted] if args.stage else wanted
-    paths = DataPaths(Path(args.imagenette_dir),
-                      Path(args.imagewoof_dir) if args.imagewoof_dir else None,
-                      Path(args.textures_dir) if args.textures_dir else None,
-                      tuple(extra), args.extra_limit)
-    mismatch = wrong_folder(specs, paths.imagenette)
+    id_dir = Path(args.imagenette_dir) if args.imagenette_dir else None
+    id_root = Path(args.id_root) if args.id_root else None
+    try:
+        folders = {spec.name: id_folder(spec, id_dir, id_root) for spec in specs}
+    except ValueError as error:
+        parser.error(str(error))
+    mismatch = wrong_folder(specs, id_dir, id_root)
     if mismatch and not smoke:
         parser.error("the ID folder does not have the classes of these runs: "
                      + ", ".join(mismatch))
@@ -136,6 +167,10 @@ def main() -> None:
           + (" (SMOKE SETTINGS, not a protocol run)" if smoke else ""), flush=True)
     failures = []
     for spec in specs:
+        paths = DataPaths(folders[spec.name],
+                          Path(args.imagewoof_dir) if args.imagewoof_dir else None,
+                          Path(args.textures_dir) if args.textures_dir else None,
+                          tuple(extra), args.extra_limit)
         try:
             if args.valstats_only:
                 validation_pass(spec, paths, out_root, device, **shared)

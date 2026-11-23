@@ -49,7 +49,7 @@ FAMILY = {"A": "plain", "D1": "plain", "C3": "plain", "C4": "plain", "C6": "plai
           **{f"{letter}{number}": "plain" if number % 2 else "augmented"
              for letter in "RN" for number in range(1, 9)},
           **{name: "augmented" if recipe.augment else "plain"
-             for name, recipe in RECIPES.items() if name[0] in "PQ"},
+             for name, recipe in RECIPES.items() if name[0] in "PQS"},
           "H0": "plain", "H4": "plain", "H5": "plain", "H7": "plain",
           "H1": "augmented", "H2": "augmented", "H3": "augmented", "H6": "augmented"}
 ENVELOPE = "envelope"

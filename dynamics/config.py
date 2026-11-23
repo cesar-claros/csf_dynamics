@@ -195,15 +195,63 @@ def a14_class_sets() -> dict[int, tuple[str, ...]]:
     return {int(number): tuple(classes) for number, classes in stored.items()}
 
 
+#: Amendment A15: 128 recipes, S001 to S128, drawn once: 4 for each of 32 new class
+#: sets. Their class sets are frozen after the image counts come from the HPC.
+A15_RECIPES_PATH = FROZEN_DIR / "a15_recipes.json"
+A15_CLASS_SETS_PATH = FROZEN_DIR / "a15_class_sets.json"
+for _name, _settings in json.loads(A15_RECIPES_PATH.read_text())["recipes"].items():
+    RECIPES[_name] = Recipe(**_settings)
+A15_PER_SET = 4
+A15_SETS = 32
+
+
+def a15_set_of(recipe: str) -> int | None:
+    """Number of the class set (1 to 32) of a recipe of amendment A15."""
+    if not re.fullmatch(r"S\d\d\d", recipe):
+        return None
+    return (int(recipe[1:]) - 1) // A15_PER_SET + 1
+
+
+@cache
+def a15_class_sets() -> dict[int, tuple[str, ...]]:
+    """The frozen class sets of amendment A15, by number.
+
+    Raises:
+        FileNotFoundError: If the class sets are not drawn yet.
+    """
+    if not A15_CLASS_SETS_PATH.exists():
+        raise FileNotFoundError(
+            f"{A15_CLASS_SETS_PATH.name} is not there: draw the class sets of "
+            "amendment A15 first (dynamics/build_sets_parquet.py --draw)")
+    stored = json.loads(A15_CLASS_SETS_PATH.read_text())["sets"]
+    return {int(number): tuple(classes) for number, classes in stored.items()}
+
+
 def expected_classes(recipe: str) -> tuple[str, ...] | None:
-    """The ID classes that a recipe of amendment A14 must train on.
+    """The ID classes that a recipe of amendment A14 or A15 must train on.
 
     Returns None for a recipe of another amendment: those have no such check.
     """
     if re.fullmatch(r"P\d\d", recipe):
         return IMAGENETTE_CLASSES
     number = class_set_of(recipe)
-    return None if number is None else a14_class_sets()[number]
+    if number is not None:
+        return a14_class_sets()[number]
+    number = a15_set_of(recipe)
+    return None if number is None else a15_class_sets()[number]
+
+
+def set_folder(recipe: str) -> str | None:
+    """Name of the ID folder of a recipe below the folder of its class sets.
+
+    Amendment A14 has `set1` to `set4`, and amendment A15 has `set01` to `set32`.
+    Returns None for a recipe with no class set.
+    """
+    number = class_set_of(recipe)
+    if number is not None:
+        return f"set{number}"
+    number = a15_set_of(recipe)
+    return None if number is None else f"set{number:02d}"
 
 
 @dataclass(frozen=True)
@@ -226,7 +274,7 @@ def parse_run(name: str) -> RunSpec:
     Raises:
         ValueError: If the name does not describe a run.
     """
-    match = re.fullmatch(r"([A-Z]\d{0,2})_seed(\d+)(?:_hold(\d+))?", name)
+    match = re.fullmatch(r"([A-Z]\d{0,3})_seed(\d+)(?:_hold(\d+))?", name)
     if match is None or match.group(1) not in RECIPES:
         raise ValueError(f"not a run name: {name}")
     hold = match.group(3)
@@ -286,6 +334,10 @@ for _set in range(1, 5):
         (_set - 1) * A14_PER_SET + 1, _set * A14_PER_SET + 1)]
 STAGES["q"] = [spec for _set in range(1, 5) for spec in STAGES[f"q{_set}"]]
 STAGES["q_first"] = [RunSpec("Q01", 0)]
+#: Amendment A15: one run for each recipe, 4 for each of the 32 new class sets.
+#: `run_stage --id-root` gives each run the folder of its class set.
+STAGES["s"] = [RunSpec(f"S{number:03d}", 0) for number in range(1, 129)]
+STAGES["s_first"] = [RunSpec("S001", 0)]
 
 #: Amendment A7: the earlier 10-class runs that the frozen rules are fitted on.
 STAGES["a7_train"] = [*STAGES["e_main"], *STAGES["c"], *STAGES["c2"],
