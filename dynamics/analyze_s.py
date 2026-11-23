@@ -51,11 +51,11 @@ from dynamics.config import (
 
 HERE = Path(__file__).resolve().parent
 RULES_S_PATH = HERE / "frozen" / "stage_s_rules.json"
-#: SHA-256 of the frozen files. The rules file is set after `freeze`, and the
+#: SHA-256 of the frozen files. The rules file was set after `freeze`, and the
 #: class sets after their draw, both before any new run.
 RULES_S_SHA256 = "f4eee53e1698cdcdf06ec43459db39e7b0f80463f70db0d7838e8e25fbebe115"
 RECIPES_SHA256 = "77768b6711b327f88fa02fea360f79a53ad2e296db410218542a91a082c7ffdd"
-CLASS_SETS_SHA256 = ""
+CLASS_SETS_SHA256 = "6b4420a5ba8ea2c2b3c6ba7009a10c395011de4565fd3359b6b711d3c03f598f"
 #: Stages of the fit, after the 76 runs of amendment A12 part 1.
 TRAIN_STAGES = ("z", "p", "q")
 TEST_STAGE = "s"

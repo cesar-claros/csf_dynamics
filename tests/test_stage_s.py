@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -15,10 +16,45 @@ from dynamics.config import (
     RECIPES,
     STAGES,
     RunSpec,
+    a15_class_sets,
     a15_set_of,
+    expected_classes,
     parse_run,
     set_folder,
 )
+
+HERE = Path(__file__).resolve().parent
+
+
+def test_frozen_class_sets_of_amendment_a15():
+    from dynamics import analyze_s
+
+    frozen = cs.load(bp.PATH)
+    counts = json.loads((HERE.parent / "imagenet_class_counts.json").read_text())
+    assert frozen == bp.draw_file(counts)            # the draw gives the frozen file
+    assert analyze_s.frozen_inputs() == []           # with the recorded hashes
+    sets = frozen["sets"]
+    every = [name for classes in sets.values() for name in classes]
+    assert list(sets) == [str(number) for number in range(1, A15_SETS + 1)]
+    assert all(len(classes) == 10 and classes == sorted(classes)
+               for classes in sets.values())
+    assert len(set(every)) == 320                    # no class in two sets
+    assert cs.list_hash(every) == frozen["class_list_sha256"]
+    # No Imagenette class, no Imagewoof class, and no class of amendment A14.
+    earlier = cs.load()
+    used = sorted(name for classes in earlier["sets"].values() for name in classes)
+    assert frozen["excluded"] == {"imagenette": earlier["excluded"]["imagenette"],
+                                  "imagewoof": earlier["excluded"]["imagewoof"],
+                                  "a14": used}
+    excluded = [name for group in frozen["excluded"].values() for name in group]
+    assert len(excluded) == 60 and not set(every) & set(excluded)
+    # Every class has every image, so each set can take the counts of Imagenette.
+    assert all(counts["train"][name] == 1300 and counts["val"][name] == 50
+               for name in every)
+    assert (frozen["train_images"], frozen["val_images"]) == (9469, 3925)
+    assert a15_class_sets() == {int(k): tuple(v) for k, v in sets.items()}
+    assert expected_classes("S005") == a15_class_sets()[2]
+    assert expected_classes("S128") == a15_class_sets()[32]
 
 
 def s_names() -> list[str]:
@@ -293,12 +329,14 @@ def test_freeze_and_test_of_amendment_a15_on_fabricated_runs(tmp_path, monkeypat
     with pytest.raises(SystemExit, match="not complete.*S008_seed0"):
         run("test", "--allow-other-rules")
     add(stages["s"][7])
-    # The class sets are not frozen yet: gate D stops the test.
+    # A file of class sets with another hash: gate D stops the test.
+    recorded = analyze_s.CLASS_SETS_SHA256
+    monkeypatch.setattr(analyze_s, "CLASS_SETS_SHA256", "another hash")
     with pytest.raises(SystemExit, match="gate D fails"):
         run("test", "--allow-other-rules")
     assert "a15_class_sets.json does not have the recorded hash" in report.read_text()
     assert "**Outcome:" not in report.read_text()
-    monkeypatch.setattr(analyze_s, "frozen_inputs", list)
+    monkeypatch.setattr(analyze_s, "CLASS_SETS_SHA256", recorded)
     text = run("test", "--allow-other-rules")
     assert "**Gate D passes.**" in text and "**Gate S passes.**" in text
     assert "8 of 8 runs, in 2 class sets" in text and "**Gate M passes**" in text

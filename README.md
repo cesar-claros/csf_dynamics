@@ -552,9 +552,9 @@ The plan is `../documentation/several_id_sets_rule_amendment_2026-11-23.md`. The
 python -m dynamics.build_sets_parquet --count --parquet-dir $PARQUET_DIR --out imagenet_class_counts.json
 ```
 
-Put `imagenet_class_counts.json` in the local `code/` folder.
+The file `imagenet_class_counts.json` is in the repository: 1,000 classes, of which 895 have every image.
 
-**2. The draw of the class sets, local, once.** It writes `dynamics/frozen/a15_class_sets.json`. Then set `CLASS_SETS_SHA256` in `dynamics/analyze_s.py` to the printed hash, and commit and push before any run:
+**2. The draw of the class sets, local, once (done).** It wrote `dynamics/frozen/a15_class_sets.json` from the counts file, which is in the repository. The hash of the frozen file is `CLASS_SETS_SHA256` in `dynamics/analyze_s.py`. The script does not write the file a second time:
 
 ```bash
 uv run python -m dynamics.build_sets_parquet --draw --counts imagenet_class_counts.json
