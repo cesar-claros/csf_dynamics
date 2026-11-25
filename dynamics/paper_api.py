@@ -36,6 +36,11 @@ PAPER_CSFS = (*LOGIT_ONLY, *FEATURE_CSFS)
 HEAD_FREE = ("Maha", "MahaPP", "PCA_RecError")
 #: Rows per call of the Mahalanobis scoring, which builds an (n, d, classes) tensor.
 MAHA_CHUNK = 8192
+#: The paper's Mahalanobis scoring builds one array of rows x features x classes.
+#: Above this number of bytes for one chunk, `maha_scores` evaluates the same
+#: expression with arrays of rows x classes. No setting with 10 or 100 classes
+#: reaches the limit, so their path does not change.
+MAHA_BUDGET = 8 * 2**30
 
 
 def _last_layer(module, study_name, return_model=True):
@@ -91,6 +96,36 @@ def _config(n_classes: int) -> SimpleNamespace:
 
 def _module(w: torch.Tensor, b: torch.Tensor) -> SimpleNamespace:
     return SimpleNamespace(model=SimpleNamespace(), w=w, b=b)
+
+
+def maha_scores(maha, evaluation: torch.Tensor, normalize: bool = False,
+                chunk: int = 4096) -> torch.Tensor:
+    """The Mahalanobis score of the paper class `maha` for many classes.
+
+    The paper's `get_scores` gives, for each row x, the largest value over the
+    classes c of -(x - m_c)' P (x - m_c), with the class means m_c and the
+    precision P of the fit. This function gives the same value from
+    x'Px - 2 x'P m_c + m_c'P m_c, so that it needs no array of rows x features x
+    classes. `normalize` applies the row normalization of Mahalanobis++ first.
+
+    Args:
+        maha: A fitted `MahalanobisDistance` of the paper code.
+        evaluation: Features, one row for each image.
+    """
+    from src.csfs.mahalanobis_pp import _l2_normalize_rows
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    means = torch.stack(maha.means, dim=0).to(device)
+    precision = maha.precision.to(device)
+    projected = means @ precision
+    constant = (projected * means).sum(dim=1)
+    out = []
+    for part in evaluation.split(chunk):
+        rows = (_l2_normalize_rows(part) if normalize else part).to(device)
+        own = ((rows @ precision) * rows).sum(dim=1, keepdim=True)
+        distance = own - 2 * rows @ projected.T + constant
+        out.append((-distance).amax(dim=1).cpu())
+    return torch.cat(out)
 
 
 def paper_scores(train: torch.Tensor, labels: torch.Tensor,
@@ -165,6 +200,8 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
     def fit_maha(cls):
         maha = cls(cf)
         maha.compute_MahaDist_params(train, labels)
+        if MAHA_CHUNK * evaluation.shape[1] * n_classes * 8 > MAHA_BUDGET:
+            return maha_scores(maha, evaluation, normalize=cls is MahalanobisPP)
         return torch.cat([maha.get_scores(part)
                           for part in evaluation.split(MAHA_CHUNK)])
 

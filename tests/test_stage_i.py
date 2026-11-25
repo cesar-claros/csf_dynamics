@@ -220,6 +220,8 @@ def test_evaluation_of_a_model_on_tiny_images(tiny_data, tmp_path, monkeypatch):
     clock = {r["name"]: r["value"] for r in out["descriptors"]}
     assert clock["val_accuracy"] == out["val_accuracy"] and "train_loss" in clock
     assert out["errors"] == {} and not any(out["nonfinite"].values())
+    # The time of each score is in the result file.
+    assert set(out["seconds_by_score"]) == {*zoo.PAPER_CSFS, "kNN, FeatureNorm"}
     # A model with a result file is skipped.
     stamp = path.stat().st_mtime_ns
     zoo.evaluate_model(entry, tiny_data.imagenette, tiny_data.textures, extra,
@@ -401,3 +403,61 @@ def pd_frame(listed):
     import pandas as pd
 
     return pd.DataFrame(listed).set_index("id")
+
+
+def test_scores_one_at_a_time_are_the_scores_of_one_call():
+    import numpy as np
+
+    from dynamics import zoo
+    from dynamics.scores import all_scores
+
+    torch.manual_seed(0)
+    n_classes, d = 6, 16
+    w, b = torch.randn(n_classes, d), torch.randn(n_classes)
+    labels = torch.arange(n_classes).repeat_interleave(30)
+    train = w[labels] + torch.randn(len(labels), d)
+    rows = torch.randn(80, d)
+    fit = {"feature": train, "labels": labels, "logits": train @ w.T + b}
+    joint, joint_errors = all_scores(train, labels, fit["logits"], w, b, rows,
+                                     rows @ w.T + b, n_classes, None, "float64")
+    single, errors, seconds = zoo.timed_scores(fit, w, b, rows, rows @ w.T + b,
+                                               n_classes, None, "float64")
+    assert errors == joint_errors == {} and list(single) == list(joint)
+    for name in joint:
+        assert np.array_equal(single[name], joint[name]), name
+    assert len(seconds) == len(zoo.PAPER_CSFS) + 1
+
+
+def test_mahalanobis_scores_for_many_classes_are_those_of_the_paper_code():
+    from dynamics import paper_api
+
+    paper_api.install()
+    from src.csfs import MahalanobisDistance, MahalanobisPP
+
+    torch.manual_seed(0)
+    n_classes, d = 7, 24
+    means = torch.randn(n_classes, d, dtype=torch.float64) * 2
+    labels = torch.arange(n_classes).repeat_interleave(60)
+    train = means[labels] + torch.randn(len(labels), d, dtype=torch.float64)
+    rows = torch.randn(300, d, dtype=torch.float64) * 1.5
+    previous = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float64)
+    try:
+        for cls in (MahalanobisDistance, MahalanobisPP):
+            maha = cls(paper_api._config(n_classes))
+            maha.compute_MahaDist_params(train, labels)
+            old = maha.get_scores(rows)
+            new = paper_api.maha_scores(maha, rows, normalize=cls is MahalanobisPP,
+                                        chunk=64)
+            assert torch.allclose(old, new, rtol=1e-10, atol=1e-10)
+    finally:
+        torch.set_default_dtype(previous)
+    # Every earlier setting stays on the path of the paper code: 10 and 100
+    # classes with features of 512, 1,024, or 2,048 values.
+    def bytes_of(d, classes):
+        return paper_api.MAHA_CHUNK * d * classes * 8
+
+    for d, classes in ((512, 10), (1024, 10), (2048, 10), (512, 100)):
+        assert bytes_of(d, classes) <= paper_api.MAHA_BUDGET
+    for d, classes in ((512, 1000), (2048, 1000), (4096, 1000)):
+        assert bytes_of(d, classes) > paper_api.MAHA_BUDGET

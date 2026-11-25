@@ -13,7 +13,8 @@ scores are fitted on the fixed training subset and scored on the validation
 images, on two stand-in sets made from a fixed subset of the validation images
 (class blends and shuffled patches), and on the OOD sets. One result file is
 written for each model, <out-root>/zoo/<id>.json. A model with a result file is
-skipped, so the command can restart.
+skipped, so the command can restart. The log has one line for the features of
+each set and one line for each score, with the seconds.
 
 Protocol: ../documentation/imagenet1k_public_models_protocol_2026-11-24.md
 """
@@ -32,7 +33,12 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset, Subset
 
 from dynamics import zoo_list
-from dynamics.config import DEFAULT_PRECISION, EXTRA_LIMIT, GRID, PRECISIONS
+from dynamics.config import (
+    DEFAULT_PRECISION,
+    EXTRA_LIMIT,
+    GRID,
+    PRECISIONS,
+)
 from dynamics.data import (
     BlendSet,
     blend_partners,
@@ -43,7 +49,8 @@ from dynamics.data import (
     thin,
 )
 from dynamics.metrics import error_metrics, set_metrics
-from dynamics.scores import all_scores
+from dynamics.paper_api import PAPER_CSFS, paper_scores
+from dynamics.scores import extra_scores
 
 #: The three models of the pilot.
 PILOT = ("resnet50-v1", "vit_b_16-v1", "efficientnet_b0-v1")
@@ -183,9 +190,44 @@ def extract(model: torch.nn.Module, head: torch.nn.Linear, dataset: Dataset,
     return {name: torch.cat(values) for name, values in parts.items()}
 
 
+def timed_scores(train: dict, w: torch.Tensor, b: torch.Tensor,
+                 evaluation: torch.Tensor, logits: torch.Tensor, n_classes: int,
+                 device: torch.device | None, precision: str, label: str = ""
+                 ) -> tuple[dict[str, np.ndarray], dict[str, str], dict[str, float]]:
+    """The scores of `scores.all_scores`, one score at a time, with the seconds
+    of each. A line is printed for each score, so that a log shows the progress.
+
+    Each score has its own seed in the paper pipeline, so one call for each score
+    gives the values of one call for all of them.
+    """
+    dtype = {"float32": torch.float32, "float64": torch.float64}[precision]
+    converted = [tensor.to(dtype) for tensor in (
+        train["feature"], train["logits"], w, b, evaluation, logits)]
+    fit, fit_logits, w_fit, b_fit, rows, row_logits = converted
+    scores: dict[str, np.ndarray] = {}
+    errors: dict[str, str] = {}
+    seconds: dict[str, float] = {}
+    for csf in PAPER_CSFS:
+        began = time.time()
+        values, failed = paper_scores(fit, train["labels"], fit_logits, w_fit, b_fit,
+                                      rows, row_logits, n_classes, precision,
+                                      names=(csf,))
+        scores.update(values)
+        errors.update(failed)
+        seconds[csf] = round(time.time() - began, 1)
+        print(f"[zoo] {label} score {csf}: {seconds[csf]}s"
+              + (f" FAILED: {failed[csf]}" if csf in failed else ""), flush=True)
+    began = time.time()
+    scores.update(extra_scores(train["feature"], evaluation, device))
+    seconds["kNN, FeatureNorm"] = round(time.time() - began, 1)
+    print(f"[zoo] {label} scores kNN and FeatureNorm: "
+          f"{seconds['kNN, FeatureNorm']}s", flush=True)
+    return scores, errors, seconds
+
+
 def evaluate(features: dict[str, dict], w: torch.Tensor, b: torch.Tensor,
              n_classes: int, device: torch.device | None = None,
-             precision: str = DEFAULT_PRECISION) -> dict:
+             precision: str = DEFAULT_PRECISION, label: str = "") -> dict:
     """The metrics of every score on every set, from the extracted features.
 
     The logits are the head on the feature in float32, so that they are exact for
@@ -194,20 +236,20 @@ def evaluate(features: dict[str, dict], w: torch.Tensor, b: torch.Tensor,
     Args:
         features: Per set name, the dict of `extract`. The sets `train` and `val`
             are required. Every other set is an unseen set.
+        label: The name of the model in the progress lines.
     """
-    for values in features.values():
-        values["logits"] = values["feature"] @ w.T + b
+    for extracted in features.values():
+        extracted["logits"] = extracted["feature"] @ w.T + b
     train, val = features["train"], features["val"]
     unseen = {name: values for name, values in features.items()
               if name not in ("train", "val")}
     order = ["val", *unseen]
     sizes = [len(features[name]["logits"]) for name in order]
     bounds = np.cumsum([0, *sizes])
-    scores, errors = all_scores(
-        train["feature"], train["labels"], train["logits"], w, b,
-        torch.cat([features[name]["feature"] for name in order]),
+    scores, errors, seconds = timed_scores(
+        train, w, b, torch.cat([features[name]["feature"] for name in order]),
         torch.cat([features[name]["logits"] for name in order]), n_classes, device,
-        precision)
+        precision, label)
     correct = (val["logits"].argmax(dim=1) == val["labels"]).numpy()
 
     def part(values: np.ndarray, name: str) -> np.ndarray:
@@ -243,6 +285,7 @@ def evaluate(features: dict[str, dict], w: torch.Tensor, b: torch.Tensor,
                       for csf, values in scores.items()},
         "counts": dict(zip(order, sizes)) | {"train": len(train["logits"])},
         "val_accuracy": clock["val_accuracy"],
+        "seconds_by_score": seconds,
     }
 
 
@@ -306,11 +349,22 @@ def evaluate_model(entry: dict, imagenet: Path, textures: Path | None,
         raise ValueError(f"the head has {head.out_features} outputs and the ID data "
                          f"have {n_classes} classes")
     size = batch_size or batch_size_of(entry["crop_size"][0])
-    features = {name: extract(model, head, dataset, device, size, workers, amp)
-                for name, dataset in sets.items()}
+    print(f"[zoo] {entry['id']}: {len(sets)} sets, "
+          f"{sum(len(dataset) for dataset in sets.values())} images, batch {size}",
+          flush=True)
+    features = {}
+    for name, dataset in sets.items():
+        start = time.time()
+        features[name] = extract(model, head, dataset, device, size, workers, amp)
+        print(f"[zoo] {entry['id']} features of {name}: {len(dataset)} images, "
+              f"{time.time() - start:.0f}s", flush=True)
     extracted = time.time()
+    model.to("cpu")                     # the scores need the memory of the GPU
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
     out = evaluate(features, head.weight.detach().float().cpu(),
-                   head.bias.detach().float().cpu(), n_classes, device, precision)
+                   head.bias.detach().float().cpu(), n_classes, device, precision,
+                   entry["id"])
     import torchvision
 
     out.update(model=entry["id"], run=entry["id"], epoch=1, n_classes=n_classes,
