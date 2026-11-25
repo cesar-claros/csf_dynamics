@@ -445,8 +445,10 @@ def test_sections(frozen: dict, old: dict, new: analyze_e.Tables,
             "rule": sl.shortlist_regret(inside, analyze_h.top(rule, last, SHORT)),
             "random": sl.random_regret(inside, SHORT)})
         reading, difference = analyze_h.read_shortlists(short)
-        augrc = az.augrc_regret(new, az.GROUPS[name], picks.loc[kept.index].rename(
-            columns={RULE: az.RULE, BY_CELL: az.ONE}), inside)
+        # Only these two columns: the fixed score has the name `az.ONE` already.
+        augrc = az.augrc_regret(new, az.GROUPS[name], picks.loc[
+            kept.index, [RULE, BY_CELL]].rename(
+                columns={RULE: az.RULE, BY_CELL: az.ONE}), inside)
         sections.append(("Shortlists and AUGRC (secondary)", (
             f"- Shortlists of size {SHORT}: fixed {short['fixed'].mean():.2f}, rule "
             f"{short['rule'].mean():.2f}, random {short['random'].mean():.2f}; rule "

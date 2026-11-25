@@ -348,6 +348,9 @@ def test_freeze_and_test_of_amendment_a15_on_fabricated_runs(tmp_path, monkeypat
                   "## Target textures (secondary"):
         assert title in text
     assert analyze_s.OLD in text and "a12_rule" in text
+    # The AUGRC regret has a value for the rule and for the choice by cell.
+    line = next(row for row in text.splitlines() if "Regret in AUGRC points" in row)
+    assert "nan" not in line and "choice by cell" in line
     # A run with the classes of another set: gate D stops the test.
     add(stages["s"][0], classes=list(sets[2]))
     with pytest.raises(SystemExit, match="gate D fails"):
