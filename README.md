@@ -38,6 +38,10 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_r.py` | Amendment A13: applies the frozen rule of amendment A12 part 1 to runs of another architecture (ResNet-50, DenseNet-121), with no new fit (local). |
 | `dynamics/draw_recipes.py` | Amendments A14 and A15: draws the recipes, once, into `dynamics/frozen/a14_recipes.json` and `a15_recipes.json` (local). |
 | `dynamics/build_sets_parquet.py` | Amendment A15: lists the image counts of the ImageNet classes (HPC), draws the 32 new ID class sets (local, once), and builds their folders from the parquet files, with gate D (HPC). |
+| `dynamics/zoo_list.py` | Amendment A16: makes the frozen list of the public ImageNet-1k models of torchvision, with family, lineage, and two tags (local, once). |
+| `dynamics/extract_imagenet.py` | Amendment A16: writes the ImageNet validation images and a fixed training subset from the parquet files (HPC). |
+| `dynamics/zoo.py` | Amendment A16: evaluates public ImageNet-1k models with the preprocessing of each weight. Nothing is trained (HPC). |
+| `dynamics/analyze_i.py` | Amendment A16: the gates and the read with each architecture lineage left out (local). |
 | `dynamics/analyze_s.py` | Amendment A15: fits and freezes a rule on runs of several ID sets and a choice from the recipe alone, and tests them on new class sets with the class set as the unit (local). |
 | `dynamics/build_class_sets.py` | Amendment A14: draws the four new ID class sets (local, once) and builds their folders from the 100-class folder, with gate D (HPC). |
 | `dynamics/analyze_p.py` | Amendment A14: applies the frozen rule of amendment A12 part 1 to recipes drawn at random, on Imagenette and on new ID classes, with no new fit (local). |
@@ -599,6 +603,48 @@ The analysis stops if a run of the stage has no results. If the training of a ru
 ```bash
 uv run python -m dynamics.analyze_s read --results-root dyn_results
 ```
+
+### Amendment A16: public ImageNet-1k models (1,000 classes, no training)
+
+The plan is `../documentation/imagenet1k_public_models_protocol_2026-11-24.md`. The models are the 100 weights of `dynamics/frozen/a16_models.json`: every classification weight of torchvision 0.21.0 that was trained on ImageNet-1k only and has a linear head. Nothing is trained. The analysis leaves each architecture lineage out once.
+
+- **Downloads.** torchvision downloads each weight on its first use, about 21 GB in total, into the folder of `TORCH_HOME` (default `~/.cache/torch`). The node needs internet access.
+- **Each model has its own preprocessing** (input sizes from 224 to 600 px), so the images are stored as they are.
+- **A model with a result file is skipped,** so a command can restart.
+
+**1. Write the ImageNet images, once.** The 50,000 validation images and a fixed subset of 100 training images for each class, about 17 GB. It needs `pyarrow`. Set `PARQUET_DIR` as for Stage H:
+
+```bash
+export IMAGENET1K_DIR=/path/to/imagenet1k_a16
+```
+
+```bash
+nohup python -m dynamics.extract_imagenet --parquet-dir $PARQUET_DIR --out $IMAGENET1K_DIR > dyn_i_extract.log 2>&1 &
+```
+
+**2. The pilot: three models** (ResNet-50, ViT-B/16, EfficientNet-B0). It gives the time of a model and shows if the accuracy and the scores are correct. Set `OOD` as for step 0:
+
+```bash
+nohup python -m dynamics.zoo --models pilot --imagenet-dir $IMAGENET1K_DIR --textures-dir $TEXTURES_DIR --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT > dyn_i_pilot.log 2>&1 &
+```
+
+**3. All 100 models.** The three models of the pilot are not repeated. To use several GPUs, give each command a part of the ids of the list in place of `all`:
+
+```bash
+nohup python -m dynamics.zoo --models all --imagenet-dir $IMAGENET1K_DIR --textures-dir $TEXTURES_DIR --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT > dyn_i.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_zoo.tgz zoo
+```
+
+**4. The analysis, local.** After `tar xzf dyn_zoo.tgz -C dyn_results`:
+
+```bash
+uv run python -m dynamics.analyze_i --results-root dyn_results
+```
+
+The analysis stops if a model of the list has no result file. If the evaluation of a model failed, add `--allow-missing`: the model is then reported and left out.
 
 ### Stage H: 100 classes
 

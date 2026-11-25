@@ -1,0 +1,2006 @@
+{
+ "amendment": "A16",
+ "torchvision": "0.21.0",
+ "models": [
+  {
+   "id": "alexnet-v1",
+   "model": "alexnet",
+   "weights": "IMAGENET1K_V1",
+   "family": "alexnet",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 56.522,
+   "acc5": 79.066,
+   "params": 61100840,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights reproduce closely the results of the paper using a simplified training recipe."
+  },
+  {
+   "id": "convnext_base-v1",
+   "model": "convnext_base",
+   "weights": "IMAGENET1K_V1",
+   "family": "convnext",
+   "lineage": "convnext",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 84.062,
+   "acc5": 96.87,
+   "params": 88591464,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#convnext",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "convnext_large-v1",
+   "model": "convnext_large",
+   "weights": "IMAGENET1K_V1",
+   "family": "convnext",
+   "lineage": "convnext",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 84.414,
+   "acc5": 96.976,
+   "params": 197767336,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#convnext",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "convnext_small-v1",
+   "model": "convnext_small",
+   "weights": "IMAGENET1K_V1",
+   "family": "convnext",
+   "lineage": "convnext",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 83.616,
+   "acc5": 96.65,
+   "params": 50223688,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    230
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#convnext",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "convnext_tiny-v1",
+   "model": "convnext_tiny",
+   "weights": "IMAGENET1K_V1",
+   "family": "convnext",
+   "lineage": "convnext",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.52,
+   "acc5": 96.146,
+   "params": 28589128,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    236
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#convnext",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "densenet121-v1",
+   "model": "densenet121",
+   "weights": "IMAGENET1K_V1",
+   "family": "densenet",
+   "lineage": "densenet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 74.434,
+   "acc5": 91.972,
+   "params": 7978856,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/116",
+   "docs": "These weights are ported from LuaTorch."
+  },
+  {
+   "id": "densenet161-v1",
+   "model": "densenet161",
+   "weights": "IMAGENET1K_V1",
+   "family": "densenet",
+   "lineage": "densenet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 77.138,
+   "acc5": 93.56,
+   "params": 28681000,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/116",
+   "docs": "These weights are ported from LuaTorch."
+  },
+  {
+   "id": "densenet169-v1",
+   "model": "densenet169",
+   "weights": "IMAGENET1K_V1",
+   "family": "densenet",
+   "lineage": "densenet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 75.6,
+   "acc5": 92.806,
+   "params": 14149480,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/116",
+   "docs": "These weights are ported from LuaTorch."
+  },
+  {
+   "id": "densenet201-v1",
+   "model": "densenet201",
+   "weights": "IMAGENET1K_V1",
+   "family": "densenet",
+   "lineage": "densenet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 76.896,
+   "acc5": 93.37,
+   "params": 20013928,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/116",
+   "docs": "These weights are ported from LuaTorch."
+  },
+  {
+   "id": "efficientnet_b0-v1",
+   "model": "efficientnet_b0",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 77.692,
+   "acc5": 93.532,
+   "params": 5288548,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b1-v1",
+   "model": "efficientnet_b1",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 78.642,
+   "acc5": 94.186,
+   "params": 7794184,
+   "crop_size": [
+    240
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b1-v2",
+   "model": "efficientnet_b1",
+   "weights": "IMAGENET1K_V2",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 79.838,
+   "acc5": 94.934,
+   "params": 7794184,
+   "crop_size": [
+    240
+   ],
+   "resize_size": [
+    255
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-lr-wd-crop-tuning",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "efficientnet_b2-v1",
+   "model": "efficientnet_b2",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 80.608,
+   "acc5": 95.31,
+   "params": 9109994,
+   "crop_size": [
+    288
+   ],
+   "resize_size": [
+    288
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b3-v1",
+   "model": "efficientnet_b3",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 82.008,
+   "acc5": 96.054,
+   "params": 12233232,
+   "crop_size": [
+    300
+   ],
+   "resize_size": [
+    320
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b4-v1",
+   "model": "efficientnet_b4",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 83.384,
+   "acc5": 96.594,
+   "params": 19341616,
+   "crop_size": [
+    380
+   ],
+   "resize_size": [
+    384
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b5-v1",
+   "model": "efficientnet_b5",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 83.444,
+   "acc5": 96.628,
+   "params": 30389784,
+   "crop_size": [
+    456
+   ],
+   "resize_size": [
+    456
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b6-v1",
+   "model": "efficientnet_b6",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 84.008,
+   "acc5": 96.916,
+   "params": 43040704,
+   "crop_size": [
+    528
+   ],
+   "resize_size": [
+    528
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_b7-v1",
+   "model": "efficientnet_b7",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 84.122,
+   "acc5": 96.908,
+   "params": 66347960,
+   "crop_size": [
+    600
+   ],
+   "resize_size": [
+    600
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v1",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_v2_l-v1",
+   "model": "efficientnet_v2_l",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet_v2",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 85.808,
+   "acc5": 97.788,
+   "params": 118515272,
+   "crop_size": [
+    480
+   ],
+   "resize_size": [
+    480
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "efficientnet_v2_m-v1",
+   "model": "efficientnet_v2_m",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet_v2",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 85.112,
+   "acc5": 97.156,
+   "params": 54139356,
+   "crop_size": [
+    480
+   ],
+   "resize_size": [
+    480
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "efficientnet_v2_s-v1",
+   "model": "efficientnet_v2_s",
+   "weights": "IMAGENET1K_V1",
+   "family": "efficientnet_v2",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 84.228,
+   "acc5": 96.878,
+   "params": 21458488,
+   "crop_size": [
+    384
+   ],
+   "resize_size": [
+    384
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#efficientnet-v2",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "googlenet-v1",
+   "model": "googlenet",
+   "weights": "IMAGENET1K_V1",
+   "family": "googlenet",
+   "lineage": "inception_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 69.778,
+   "acc5": 89.53,
+   "params": 6624904,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#googlenet",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "inception_v3-v1",
+   "model": "inception_v3",
+   "weights": "IMAGENET1K_V1",
+   "family": "inception_v3",
+   "lineage": "inception_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 77.294,
+   "acc5": 93.45,
+   "params": 27161264,
+   "crop_size": [
+    299
+   ],
+   "resize_size": [
+    342
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#inception-v3",
+   "docs": "These weights are ported from the original paper."
+  },
+  {
+   "id": "maxvit_t-v1",
+   "model": "maxvit_t",
+   "weights": "IMAGENET1K_V1",
+   "family": "maxvit",
+   "lineage": "maxvit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 83.7,
+   "acc5": 96.722,
+   "params": 30919624,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    224
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#maxvit",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe. They were trained with a BatchNorm2D momentum of 0.99 instead of the more correct 0.01."
+  },
+  {
+   "id": "mnasnet0_5-v1",
+   "model": "mnasnet0_5",
+   "weights": "IMAGENET1K_V1",
+   "family": "mnasnet",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 67.734,
+   "acc5": 87.49,
+   "params": 2218512,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/1e100/mnasnet_trainer",
+   "docs": "These weights reproduce closely the results of the paper."
+  },
+  {
+   "id": "mnasnet0_75-v1",
+   "model": "mnasnet0_75",
+   "weights": "IMAGENET1K_V1",
+   "family": "mnasnet",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 71.18,
+   "acc5": 90.496,
+   "params": 3170208,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/6019",
+   "docs": "These weights were trained from scratch by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "mnasnet1_0-v1",
+   "model": "mnasnet1_0",
+   "weights": "IMAGENET1K_V1",
+   "family": "mnasnet",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 73.456,
+   "acc5": 91.51,
+   "params": 4383312,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/1e100/mnasnet_trainer",
+   "docs": "These weights reproduce closely the results of the paper."
+  },
+  {
+   "id": "mnasnet1_3-v1",
+   "model": "mnasnet1_3",
+   "weights": "IMAGENET1K_V1",
+   "family": "mnasnet",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 76.506,
+   "acc5": 93.522,
+   "params": 6282256,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/6019",
+   "docs": "These weights were trained from scratch by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "mobilenet_v2-v1",
+   "model": "mobilenet_v2",
+   "weights": "IMAGENET1K_V1",
+   "family": "mobilenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 71.878,
+   "acc5": 90.286,
+   "params": 3504872,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv2",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "mobilenet_v2-v2",
+   "model": "mobilenet_v2",
+   "weights": "IMAGENET1K_V2",
+   "family": "mobilenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 72.154,
+   "acc5": 90.822,
+   "params": 3504872,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-reg-tuning",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "mobilenet_v3_large-v1",
+   "model": "mobilenet_v3_large",
+   "weights": "IMAGENET1K_V1",
+   "family": "mobilenet_v3",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 74.042,
+   "acc5": 91.34,
+   "params": 5483032,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv3-large--small",
+   "docs": "These weights were trained from scratch by using a simple training recipe."
+  },
+  {
+   "id": "mobilenet_v3_large-v2",
+   "model": "mobilenet_v3_large",
+   "weights": "IMAGENET1K_V2",
+   "family": "mobilenet_v3",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 75.274,
+   "acc5": 92.566,
+   "params": 5483032,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-reg-tuning",
+   "docs": "These weights improve marginally upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "mobilenet_v3_small-v1",
+   "model": "mobilenet_v3_small",
+   "weights": "IMAGENET1K_V1",
+   "family": "mobilenet_v3",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 67.668,
+   "acc5": 87.402,
+   "params": 2542856,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#mobilenetv3-large--small",
+   "docs": "These weights improve upon the results of the original paper by using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_16gf-v1",
+   "model": "regnet_x_16gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.058,
+   "acc5": 94.944,
+   "params": 54278536,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#medium-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_16gf-v2",
+   "model": "regnet_x_16gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.716,
+   "acc5": 96.196,
+   "params": 54278536,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_x_1_6gf-v1",
+   "model": "regnet_x_1_6gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 77.04,
+   "acc5": 93.44,
+   "params": 9190136,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_1_6gf-v2",
+   "model": "regnet_x_1_6gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 79.668,
+   "acc5": 94.922,
+   "params": 9190136,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_x_32gf-v1",
+   "model": "regnet_x_32gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.622,
+   "acc5": 95.248,
+   "params": 107811560,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#large-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_32gf-v2",
+   "model": "regnet_x_32gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 83.014,
+   "acc5": 96.288,
+   "params": 107811560,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_x_3_2gf-v1",
+   "model": "regnet_x_3_2gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 78.364,
+   "acc5": 93.992,
+   "params": 15296552,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#medium-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_3_2gf-v2",
+   "model": "regnet_x_3_2gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.196,
+   "acc5": 95.43,
+   "params": 15296552,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_x_400mf-v1",
+   "model": "regnet_x_400mf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 72.834,
+   "acc5": 90.95,
+   "params": 5495976,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_400mf-v2",
+   "model": "regnet_x_400mf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 74.864,
+   "acc5": 92.322,
+   "params": 5495976,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_x_800mf-v1",
+   "model": "regnet_x_800mf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 75.212,
+   "acc5": 92.348,
+   "params": 7259656,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_800mf-v2",
+   "model": "regnet_x_800mf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 77.522,
+   "acc5": 93.826,
+   "params": 7259656,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_x_8gf-v1",
+   "model": "regnet_x_8gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 79.344,
+   "acc5": 94.686,
+   "params": 39572648,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#medium-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_x_8gf-v2",
+   "model": "regnet_x_8gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.682,
+   "acc5": 95.678,
+   "params": 39572648,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_16gf-v1",
+   "model": "regnet_y_16gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.424,
+   "acc5": 95.24,
+   "params": 83590140,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#large-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_16gf-v2",
+   "model": "regnet_y_16gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.886,
+   "acc5": 96.328,
+   "params": 83590140,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_1_6gf-v1",
+   "model": "regnet_y_1_6gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 77.95,
+   "acc5": 93.966,
+   "params": 11202430,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_1_6gf-v2",
+   "model": "regnet_y_1_6gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 80.876,
+   "acc5": 95.444,
+   "params": 11202430,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_32gf-v1",
+   "model": "regnet_y_32gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.878,
+   "acc5": 95.34,
+   "params": 145046770,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#large-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_32gf-v2",
+   "model": "regnet_y_32gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 83.368,
+   "acc5": 96.498,
+   "params": 145046770,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_3_2gf-v1",
+   "model": "regnet_y_3_2gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 78.948,
+   "acc5": 94.576,
+   "params": 19436338,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#medium-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_3_2gf-v2",
+   "model": "regnet_y_3_2gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.982,
+   "acc5": 95.972,
+   "params": 19436338,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_400mf-v1",
+   "model": "regnet_y_400mf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 74.046,
+   "acc5": 91.716,
+   "params": 4344144,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_400mf-v2",
+   "model": "regnet_y_400mf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 75.804,
+   "acc5": 92.742,
+   "params": 4344144,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_800mf-v1",
+   "model": "regnet_y_800mf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 76.42,
+   "acc5": 93.136,
+   "params": 6432512,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_800mf-v2",
+   "model": "regnet_y_800mf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 78.828,
+   "acc5": 94.502,
+   "params": 6432512,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "regnet_y_8gf-v1",
+   "model": "regnet_y_8gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.032,
+   "acc5": 95.048,
+   "params": 39381472,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#medium-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "regnet_y_8gf-v2",
+   "model": "regnet_y_8gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.828,
+   "acc5": 96.33,
+   "params": 39381472,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "resnet101-v1",
+   "model": "resnet101",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 77.374,
+   "acc5": 93.546,
+   "params": 44549160,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnet",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnet101-v2",
+   "model": "resnet101",
+   "weights": "IMAGENET1K_V2",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.886,
+   "acc5": 95.78,
+   "params": 44549160,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "resnet152-v1",
+   "model": "resnet152",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 78.312,
+   "acc5": 94.046,
+   "params": 60192808,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnet",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnet152-v2",
+   "model": "resnet152",
+   "weights": "IMAGENET1K_V2",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.284,
+   "acc5": 96.002,
+   "params": 60192808,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "resnet18-v1",
+   "model": "resnet18",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 69.758,
+   "acc5": 89.078,
+   "params": 11689512,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnet",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnet34-v1",
+   "model": "resnet34",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 73.314,
+   "acc5": 91.42,
+   "params": 21797672,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnet",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnet50-v1",
+   "model": "resnet50",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 76.13,
+   "acc5": 92.862,
+   "params": 25557032,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnet",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnet50-v2",
+   "model": "resnet50",
+   "weights": "IMAGENET1K_V2",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 80.858,
+   "acc5": 95.434,
+   "params": 25557032,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#issuecomment-1013906621",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "resnext101_32x8d-v1",
+   "model": "resnext101_32x8d",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnext",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 79.312,
+   "acc5": 94.526,
+   "params": 88791336,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnext",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnext101_32x8d-v2",
+   "model": "resnext101_32x8d",
+   "weights": "IMAGENET1K_V2",
+   "family": "resnext",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.834,
+   "acc5": 96.228,
+   "params": 88791336,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "resnext101_64x4d-v1",
+   "model": "resnext101_64x4d",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnext",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 83.246,
+   "acc5": 96.454,
+   "params": 83455272,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/5935",
+   "docs": "These weights were trained from scratch by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "resnext50_32x4d-v1",
+   "model": "resnext50_32x4d",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnext",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 77.618,
+   "acc5": 93.698,
+   "params": 25028904,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnext",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "resnext50_32x4d-v2",
+   "model": "resnext50_32x4d",
+   "weights": "IMAGENET1K_V2",
+   "family": "resnext",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.198,
+   "acc5": 95.34,
+   "params": 25028904,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "shufflenet_v2_x0_5-v1",
+   "model": "shufflenet_v2_x0_5",
+   "weights": "IMAGENET1K_V1",
+   "family": "shufflenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 60.552,
+   "acc5": 81.746,
+   "params": 1366792,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/ericsun99/Shufflenet-v2-Pytorch",
+   "docs": "These weights were trained from scratch to reproduce closely the results of the paper."
+  },
+  {
+   "id": "shufflenet_v2_x1_0-v1",
+   "model": "shufflenet_v2_x1_0",
+   "weights": "IMAGENET1K_V1",
+   "family": "shufflenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 69.362,
+   "acc5": 88.316,
+   "params": 2278604,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/ericsun99/Shufflenet-v2-Pytorch",
+   "docs": "These weights were trained from scratch to reproduce closely the results of the paper."
+  },
+  {
+   "id": "shufflenet_v2_x1_5-v1",
+   "model": "shufflenet_v2_x1_5",
+   "weights": "IMAGENET1K_V1",
+   "family": "shufflenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 72.996,
+   "acc5": 91.086,
+   "params": 3503624,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/5906",
+   "docs": "These weights were trained from scratch by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "shufflenet_v2_x2_0-v1",
+   "model": "shufflenet_v2_x2_0",
+   "weights": "IMAGENET1K_V1",
+   "family": "shufflenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 76.23,
+   "acc5": 93.006,
+   "params": 7393996,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/5906",
+   "docs": "These weights were trained from scratch by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "swin_b-v1",
+   "model": "swin_b",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 83.582,
+   "acc5": 96.64,
+   "params": 87768224,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    238
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe."
+  },
+  {
+   "id": "swin_s-v1",
+   "model": "swin_s",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 83.196,
+   "acc5": 96.36,
+   "params": 49606258,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    246
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe."
+  },
+  {
+   "id": "swin_t-v1",
+   "model": "swin_t",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 81.474,
+   "acc5": 95.776,
+   "params": 28288354,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe."
+  },
+  {
+   "id": "swin_v2_b-v1",
+   "model": "swin_v2_b",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin_v2",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 84.112,
+   "acc5": 96.864,
+   "params": 87930848,
+   "crop_size": [
+    256
+   ],
+   "resize_size": [
+    272
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe."
+  },
+  {
+   "id": "swin_v2_s-v1",
+   "model": "swin_v2_s",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin_v2",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 83.712,
+   "acc5": 96.816,
+   "params": 49737442,
+   "crop_size": [
+    256
+   ],
+   "resize_size": [
+    260
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe."
+  },
+  {
+   "id": "swin_v2_t-v1",
+   "model": "swin_v2_t",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin_v2",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 82.072,
+   "acc5": 96.132,
+   "params": 28351570,
+   "crop_size": [
+    256
+   ],
+   "resize_size": [
+    260
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer-v2",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe."
+  },
+  {
+   "id": "vgg11-v1",
+   "model": "vgg11",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 69.02,
+   "acc5": 88.628,
+   "params": 132863336,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg11_bn-v1",
+   "model": "vgg11_bn",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 70.37,
+   "acc5": 89.81,
+   "params": 132868840,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg13-v1",
+   "model": "vgg13",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 69.928,
+   "acc5": 89.246,
+   "params": 133047848,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg13_bn-v1",
+   "model": "vgg13_bn",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 71.586,
+   "acc5": 90.374,
+   "params": 133053736,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg16-v1",
+   "model": "vgg16",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 71.592,
+   "acc5": 90.382,
+   "params": 138357544,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg16_bn-v1",
+   "model": "vgg16_bn",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 73.36,
+   "acc5": 91.516,
+   "params": 138365992,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg19-v1",
+   "model": "vgg19",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 72.376,
+   "acc5": 90.876,
+   "params": 143667240,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vgg19_bn-v1",
+   "model": "vgg19_bn",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 74.218,
+   "acc5": 91.842,
+   "params": 143678248,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe."
+  },
+  {
+   "id": "vit_b_16-v1",
+   "model": "vit_b_16",
+   "weights": "IMAGENET1K_V1",
+   "family": "vit",
+   "lineage": "vit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 81.072,
+   "acc5": 95.318,
+   "params": 86567656,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_b_16",
+   "docs": "These weights were trained from scratch by using a modified version of `DeIT <https://arxiv.org/abs/2012.12877>`_'s training recipe."
+  },
+  {
+   "id": "vit_b_32-v1",
+   "model": "vit_b_32",
+   "weights": "IMAGENET1K_V1",
+   "family": "vit",
+   "lineage": "vit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 75.912,
+   "acc5": 92.466,
+   "params": 88224232,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_b_32",
+   "docs": "These weights were trained from scratch by using a modified version of `DeIT <https://arxiv.org/abs/2012.12877>`_'s training recipe."
+  },
+  {
+   "id": "vit_l_16-v1",
+   "model": "vit_l_16",
+   "weights": "IMAGENET1K_V1",
+   "family": "vit",
+   "lineage": "vit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 79.662,
+   "acc5": 94.638,
+   "params": 304326632,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    242
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_16",
+   "docs": "These weights were trained from scratch by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "vit_l_32-v1",
+   "model": "vit_l_32",
+   "weights": "IMAGENET1K_V1",
+   "family": "vit",
+   "lineage": "vit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 76.972,
+   "acc5": 93.07,
+   "params": 306535400,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_32",
+   "docs": "These weights were trained from scratch by using a modified version of `DeIT <https://arxiv.org/abs/2012.12877>`_'s training recipe."
+  },
+  {
+   "id": "wide_resnet101_2-v1",
+   "model": "wide_resnet101_2",
+   "weights": "IMAGENET1K_V1",
+   "family": "wide_resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 78.848,
+   "acc5": 94.284,
+   "params": 126886696,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/912#issue-445437439",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "wide_resnet101_2-v2",
+   "model": "wide_resnet101_2",
+   "weights": "IMAGENET1K_V2",
+   "family": "wide_resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.51,
+   "acc5": 96.02,
+   "params": 126886696,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  },
+  {
+   "id": "wide_resnet50_2-v1",
+   "model": "wide_resnet50_2",
+   "weights": "IMAGENET1K_V1",
+   "family": "wide_resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 78.468,
+   "acc5": 94.086,
+   "params": 68883240,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/912#issue-445437439",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe."
+  },
+  {
+   "id": "wide_resnet50_2-v2",
+   "model": "wide_resnet50_2",
+   "weights": "IMAGENET1K_V2",
+   "family": "wide_resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.602,
+   "acc5": 95.758,
+   "params": 68883240,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-fixres",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_."
+  }
+ ]
+}
