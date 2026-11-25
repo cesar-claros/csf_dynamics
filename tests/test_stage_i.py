@@ -461,3 +461,29 @@ def test_mahalanobis_scores_for_many_classes_are_those_of_the_paper_code():
         assert bytes_of(d, classes) <= paper_api.MAHA_BUDGET
     for d, classes in ((512, 1000), (2048, 1000), (4096, 1000)):
         assert bytes_of(d, classes) > paper_api.MAHA_BUDGET
+
+
+def test_gradnorm_scores_for_many_rows_are_those_of_the_paper_code():
+    from dynamics import paper_api
+
+    paper_api.install()
+    from src.csfs import GradNorm
+
+    torch.manual_seed(0)
+    n_classes, d = 9, 20
+    w = torch.randn(n_classes, d, dtype=torch.float64)
+    b = torch.randn(n_classes, dtype=torch.float64)
+    rows = torch.randn(200, d, dtype=torch.float64) * 1.5
+    previous = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float64)
+    try:
+        old = GradNorm(paper_api._module(w, b), paper_api.STUDY,
+                       paper_api._config(n_classes)).get_scores(rows, use_cuda=False)
+        new = paper_api.gradnorm_scores(w, b, rows, chunk=64)
+    finally:
+        torch.set_default_dtype(previous)
+    assert torch.allclose(old.double(), new, rtol=1e-10, atol=1e-10)
+    # Every earlier evaluation stays on the path of the paper code.
+    for rows_, classes in ((53_344, 10), (56_569, 100)):
+        assert rows_ * classes <= paper_api.GRADNORM_LIMIT
+    assert 107_640 * 1000 > paper_api.GRADNORM_LIMIT

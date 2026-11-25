@@ -41,6 +41,10 @@ MAHA_CHUNK = 8192
 #: expression with arrays of rows x classes. No setting with 10 or 100 classes
 #: reaches the limit, so their path does not change.
 MAHA_BUDGET = 8 * 2**30
+#: The paper's GradNorm scoring is a loop with one backward pass for each row.
+#: Above this number of rows x classes, `gradnorm_scores` gives the same values
+#: with no loop. No setting with 10 or 100 classes reaches the limit.
+GRADNORM_LIMIT = 20_000_000
 
 
 def _last_layer(module, study_name, return_model=True):
@@ -125,6 +129,27 @@ def maha_scores(maha, evaluation: torch.Tensor, normalize: bool = False,
         own = ((rows @ precision) * rows).sum(dim=1, keepdim=True)
         distance = own - 2 * rows @ projected.T + constant
         out.append((-distance).amax(dim=1).cpu())
+    return torch.cat(out)
+
+
+def gradnorm_scores(w: torch.Tensor, b: torch.Tensor, evaluation: torch.Tensor,
+                    chunk: int = 8192) -> torch.Tensor:
+    """The GradNorm score of the paper class for many rows, with no loop.
+
+    The paper's `get_scores` takes, for each row x, the loss -sum_c log p_c with
+    p = softmax(W x + b), and returns the sum of the absolute values of its
+    gradient with respect to W. That gradient is the outer product of (C p - 1)
+    and x, with C classes, so the sum is ||C p - 1||_1 times ||x||_1.
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    weight, bias = w.to(device), b.to(device)
+    classes = weight.shape[0]
+    out = []
+    for part in evaluation.split(chunk):
+        rows = part.to(device)
+        share = torch.softmax(rows @ weight.T + bias, dim=1)
+        out.append(((classes * share - 1).abs().sum(dim=1)
+                    * rows.abs().sum(dim=1)).cpu())
     return torch.cat(out)
 
 
@@ -243,8 +268,10 @@ def paper_scores(train: torch.Tensor, labels: torch.Tensor,
         "PCE": lambda: scores_funcs.predictive_collision_entropy(softmax64),
         "GE": lambda: scores_funcs.guessing_entropy(softmax64),
         "PE": lambda: scores_funcs.predictive_entropy(softmax64),
-        "GradNorm": lambda: GradNorm(module, STUDY, cf).get_scores(
-            evaluation, use_cuda=False),
+        "GradNorm": lambda: (
+            gradnorm_scores(w, b, evaluation)
+            if len(evaluation) * n_classes > GRADNORM_LIMIT
+            else GradNorm(module, STUDY, cf).get_scores(evaluation, use_cuda=False)),
         "pNML": fit_pnml,
         "CTM": fit_ctm,
         "fDBD": fit_fdbd,
