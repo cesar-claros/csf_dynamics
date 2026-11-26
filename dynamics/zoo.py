@@ -77,6 +77,15 @@ def last_linear(model: torch.nn.Module) -> torch.nn.Linear:
     return layers[-1]
 
 
+def head_parameters(head: torch.nn.Linear) -> tuple[torch.Tensor, torch.Tensor]:
+    """The weights and the bias of a head in float32. A head with no bias (the
+    last layer of MaxViT) has a bias of 0."""
+    weight = head.weight.detach().float().cpu()
+    bias = (torch.zeros(head.out_features) if head.bias is None
+            else head.bias.detach().float().cpu())
+    return weight, bias
+
+
 def load_model(entry: dict) -> tuple[torch.nn.Module, object]:
     """The network of one entry with its weights, and the preprocessing of the
     weights."""
@@ -362,8 +371,7 @@ def evaluate_model(entry: dict, imagenet: Path, textures: Path | None,
     model.to("cpu")                     # the scores need the memory of the GPU
     if device.type == "cuda":
         torch.cuda.empty_cache()
-    out = evaluate(features, head.weight.detach().float().cpu(),
-                   head.bias.detach().float().cpu(), n_classes, device, precision,
+    out = evaluate(features, *head_parameters(head), n_classes, device, precision,
                    entry["id"])
     import torchvision
 

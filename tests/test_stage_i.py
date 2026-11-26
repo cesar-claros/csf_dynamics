@@ -487,3 +487,22 @@ def test_gradnorm_scores_for_many_rows_are_those_of_the_paper_code():
     for rows_, classes in ((53_344, 10), (56_569, 100)):
         assert rows_ * classes <= paper_api.GRADNORM_LIMIT
     assert 107_640 * 1000 > paper_api.GRADNORM_LIMIT
+
+
+def test_a_head_with_no_bias_has_a_bias_of_zero():
+    from dynamics import zoo
+
+    torch.manual_seed(0)
+    # The classifier of MaxViT ends in a linear layer with no bias.
+    model = torch.nn.Sequential(
+        torch.nn.Flatten(), torch.nn.Linear(3 * 8 * 8, 16), torch.nn.Tanh(),
+        torch.nn.Linear(16, 7, bias=False)).eval()
+    head = zoo.last_linear(model)
+    assert head.bias is None
+    weight, bias = zoo.head_parameters(head)
+    assert weight.shape == (7, 16) and torch.equal(bias, torch.zeros(7))
+    out = zoo.extract(model, head, Noise(5, 8), torch.device("cpu"), batch_size=2,
+                      workers=0)
+    assert torch.allclose(out["feature"] @ weight.T + bias, out["output"], atol=1e-6)
+    with_bias = torch.nn.Linear(16, 7)
+    assert torch.equal(zoo.head_parameters(with_bias)[1], with_bias.bias.detach())
