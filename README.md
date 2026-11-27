@@ -42,6 +42,8 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/extract_imagenet.py` | Amendment A16: writes the ImageNet validation images and a fixed training subset from the parquet files (HPC). |
 | `dynamics/zoo.py` | Amendment A16: evaluates public ImageNet-1k models with the preprocessing of each weight. Nothing is trained (HPC). |
 | `dynamics/analyze_i.py` | Amendment A16: the gates and the read with each architecture lineage left out (local). |
+| `dynamics/zoo_timm_list.py`, `dynamics/zoo_timm_tags.py` | Amendment A17: make the frozen list of the timm models (new lineages, ResNet-50 recipes, seen lineages) with the head check, the type, and the recipe tag of each model (local, once, in an environment with timm 1.0.31). |
+| `dynamics/analyze_j.py` | Amendment A17: freezes the choices that are fitted on the 100 models of amendment A16, and tests them on the timm models with no new fit (local). |
 | `dynamics/analyze_s.py` | Amendment A15: fits and freezes a rule on runs of several ID sets and a choice from the recipe alone, and tests them on new class sets with the class set as the unit (local). |
 | `dynamics/build_class_sets.py` | Amendment A14: draws the four new ID class sets (local, once) and builds their folders from the 100-class folder, with gate D (HPC). |
 | `dynamics/analyze_p.py` | Amendment A14: applies the frozen rule of amendment A12 part 1 to recipes drawn at random, on Imagenette and on new ID classes, with no new fit (local). |
@@ -645,6 +647,54 @@ uv run python -m dynamics.analyze_i --results-root dyn_results
 ```
 
 The analysis stops if a model of the list has no result file. If the evaluation of a model failed, add `--allow-missing`: the model is then reported and left out.
+
+### Amendment A17: the frozen ImageNet-1k rule on timm models (1,000 classes, no training)
+
+The plan is `../documentation/imagenet1k_second_library_amendment_2026-11-26.md`. The choices are frozen in `dynamics/frozen/stage_j_rules.json` (a fit on the 100 models of amendment A16). The models are the timm weights of `dynamics/frozen/a17_models.json`. Nothing is trained and nothing is fitted for the outcome.
+
+- **The image needs timm 1.0.31,** the version of the list. The evaluation stops with another version.
+- **Downloads.** timm downloads each weight from the Hugging Face hub on its first use, into the folder of `HF_HOME` (default `~/.cache/huggingface`). Set it to a disk with space before the run:
+
+```bash
+export HF_HOME=/path/to/a/shared/disk/hf_cache
+```
+
+- **The images are those of amendment A16** (`$IMAGENET1K_DIR`). No new extraction is necessary.
+- **The result files go to `$DYN_ROOT/zoo_timm`.** A model with a result file is skipped, so a command can restart.
+
+**1. The pilot: three models** (one transformer and one convolutional model of a new lineage, and ResNet-50 with the recipe A1):
+
+```bash
+nohup python -m dynamics.zoo --list a17 --models pilot --imagenet-dir $IMAGENET1K_DIR --textures-dir $TEXTURES_DIR --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT > dyn_j_pilot.log 2>&1 &
+```
+
+**2. All models.** The three models of the pilot are not repeated:
+
+```bash
+nohup python -m dynamics.zoo --list a17 --models all --imagenet-dir $IMAGENET1K_DIR --textures-dir $TEXTURES_DIR --extra-set inaturalist=$OOD/inaturalist --extra-set places=$OOD/places --extra-set sun=$OOD/sun --extra-set openimage_o=$OOD/openimage_o --extra-set ssb_hard=$OOD/ssb_hard --extra-set ninco=$OOD/ninco --extra-set imagenet_o=$OOD/imagenet_o --out-root $DYN_ROOT > dyn_j.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_zoo_timm.tgz zoo_timm
+```
+
+**3. The analysis, local.** After `tar xzf dyn_zoo_timm.tgz -C dyn_results`. The 100 result files of amendment A16 must be in `dyn_results/zoo`, because two planned secondary readings use them:
+
+```bash
+uv run python -m dynamics.analyze_j test --results-root dyn_results
+```
+
+The analysis stops if a model of the list has no result file. If the evaluation of a model failed, add `--allow-missing`: the model then counts as a model that leaves.
+
+**The list and the frozen choices are made once, local.** The list needs timm 1.0.31 and the file `results/results-imagenet.csv` of the tag `v1.0.31` of the timm repository. Both commands refuse to write a file that exists:
+
+```bash
+python -m dynamics.zoo_timm_list freeze --results-file dyn_results/timm_meta/results-imagenet-v1.0.31.csv
+```
+
+```bash
+uv run python -m dynamics.analyze_j freeze --results-root dyn_results
+```
 
 ### Stage H: 100 classes
 

@@ -287,7 +287,7 @@ def test_weighted_rule_is_the_rule_of_the_project_with_equal_weights():
     assert np.allclose(totals, totals.iloc[0])
 
 
-def fabricate(tmp_path, listed, wrong_accuracy=(), failing=None):
+def fabricate(tmp_path, listed, wrong_accuracy=(), failing=None, folder="zoo"):
     """Result files with the layout of `dynamics.zoo`, from random scores."""
     import numpy as np
 
@@ -296,7 +296,7 @@ def fabricate(tmp_path, listed, wrong_accuracy=(), failing=None):
     from dynamics.scores import ALL_CSFS
 
     sets = [name for group in analyze_i.GROUPS.values() for name in group]
-    folder = tmp_path / "zoo"
+    folder = tmp_path / folder
     folder.mkdir(exist_ok=True)
     for number, entry in enumerate(listed):
         rng = np.random.default_rng(number)

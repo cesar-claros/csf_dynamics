@@ -1,0 +1,1100 @@
+{
+ "about": "Amendment A17: what the documentation of each drawn timm weight says about its training recipe. Read on 2026-11-26, before any model of the list was evaluated. The evidence is a summary in our words.",
+ "timm_default_smoothing": {
+  "value": 0.1,
+  "detail": "In timm v1.0.31 and on main the argparse default of --smoothing is None, and train.py resolves None to 0.1 for single-label classification (0.0 for multi-label). Up to v1.0.30 the argparse default was the literal 0.1 (checked v1.0.30, v1.0.26, v0.2.1 and a Feb 2020 commit). The value is passed to Mixup/CutMix targets when they are active, otherwise to the label-smoothing or JSD loss.",
+  "source": "https://github.com/huggingface/pytorch-image-models/blob/main/train.py",
+  "source_tagged": "https://github.com/huggingface/pytorch-image-models/blob/v1.0.31/train.py"
+ },
+ "weights": {
+  "resnet50.a1_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Weight-specific. ResNet Strikes Back (RSB) Table 2, procedure A1: label smoothing 0.1, mixup 0.2, cutmix 1.0, BCE loss, LAMB, 600 epochs."
+  },
+  "resnet50.a1h_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/resnet50.a1h_in1k",
+   "evidence": "Family-level. Card: based on RSB A1 with stronger dropout, stochastic depth and RandAugment (LAMB, trained at 176 px). A1 in RSB Table 2 has label smoothing 0.1, mixup 0.2, cutmix 1.0; the timm hparams doc keeps the no-CutMix variant under a different tag (ah). The exact run config is not published."
+  },
+  "resnet50.a2_in1k": {
+   "label_smoothing": "no",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Weight-specific. RSB Table 2, procedure A2: no label smoothing, mixup 0.1, cutmix 1.0, BCE loss, LAMB, 300 epochs."
+  },
+  "resnet50.a3_in1k": {
+   "label_smoothing": "no",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Weight-specific. RSB Table 2, procedure A3: no label smoothing, mixup 0.1, cutmix 1.0, BCE loss, LAMB, 100 epochs at 160 px."
+  },
+  "resnet50.am_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/resnet50.am_in1k",
+   "evidence": "Card: AugMix recipe with JSD loss, SGD, cosine schedule; no command is published, so label smoothing is not documented (the train.py default 0.1 would act inside the JSD loss unless overridden). Mixup and cutmix are ruled out by the code of that time (early 2020): the JSD path takes hard labels, train.py asserted no mixup collate with aug splits, and it had no CutMix option yet."
+  },
+  "resnet50.b1k_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Family-level. Card: based on RSB procedure B (same as timm RA2: RMSProp, EMA, step decay). RSB Table 10 lists B with label smoothing 0.1, mixup 0.2 and no CutMix. The exact run config is not published."
+  },
+  "resnet50.b2k_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Family-level. Card: based on RSB procedure B (same as timm RA2: RMSProp, EMA, step decay). RSB Table 10 lists B with label smoothing 0.1, mixup 0.2 and no CutMix. The exact run config is not published."
+  },
+  "resnet50.bt_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/resnet50.bt_in1k",
+   "evidence": "Card: Bag-of-Tricks recipe, SGD with Nesterov, cosine schedule. The checkpoint (rw_resnet50, 78.47) is already listed in the timm README of Dec 2019 with no command, so label smoothing and mixup are not documented for this run (train.py default smoothing is 0.1). CutMix was added to timm only in Aug 2020, after this weight."
+  },
+  "resnet50.c1_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Family-level. Card: based on RSB C recipes (SGD with Nesterov and AGC, cosine). RSB Table 10 lists C.1 and C.2 with label smoothing 0.1, mixup 0.2, cutmix 1.0, cross-entropy loss. The exact run config is not published."
+  },
+  "resnet50.c2_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Family-level. Card: based on RSB C recipes (SGD with Nesterov and AGC, cosine). RSB Table 10 lists C.1 and C.2 with label smoothing 0.1, mixup 0.2, cutmix 1.0, cross-entropy loss. The exact run config is not published."
+  },
+  "resnet50.d_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2110.00476",
+   "evidence": "Family-level. Card: based on RSB D recipe (AdamW variant, BCE loss, cosine). RSB Table 10 lists D with label smoothing 0.1, mixup 0.2, cutmix 1.0. The exact run config is not published."
+  },
+  "resnet50.gluon_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://raw.githubusercontent.com/dmlc/web-data/master/gluoncv/logs/classification/imagenet/resnet50_v1b.sh",
+   "evidence": "Weight-specific. The timm weight is the GluonCV resnet50_v1b port. The GluonCV model zoo training command for it (120 epochs, cosine, 77.67 top-1) sets the label-smoothing flag and has no mixup flag and no teacher; the script has no CutMix."
+  },
+  "resnet50.ra_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/resnet50.ra_in1k",
+   "evidence": "Family-level only; no run config is published. Card: RandAugment RA recipe, published as RSB procedure B (Table 10: label smoothing 0.1, no CutMix). Mixup is unknown because sources conflict: RSB B lists mixup 0.2, but the timm RA2 gist says mixup was added with RA2 and the documented RA commands have none."
+  },
+  "resnet50.ram_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/huggingface/pytorch-image-models/blob/main/hfdocs/source/training_script.mdx",
+   "evidence": "Weight-specific. The timm docs give the full command of this 79.04 run: JSD loss with 3 augmentation splits and RandAugment, with no mixup or cutmix flag and no smoothing flag, so the train.py default smoothing 0.1 is applied inside the JSD loss (label smoothing by default, not by an explicit flag)."
+  },
+  "eca_halonext26ts.c1_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/eca_halonext26ts.c1_in1k",
+   "evidence": "Family-level. Card: trained in timm, based on RSB C recipes (SGD with Nesterov and AGC, cosine). RSB Table 10 lists C.1 with label smoothing 0.1, mixup 0.2, cutmix 1.0. The exact run config is not published."
+  },
+  "lambda_resnet50ts.a1h_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/lambda_resnet50ts.a1h_in1k",
+   "evidence": "Family-level. Card: trained in timm, based on RSB A1 with stronger dropout, stochastic depth and RandAugment (LAMB). A1 in RSB Table 2 has label smoothing 0.1, mixup 0.2, cutmix 1.0. The exact run config is not published."
+  },
+  "repvgg_b1.rvgg_in1k": {
+   "label_smoothing": "no",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2101.03697",
+   "evidence": "Paper: B1 is in the 120-epoch simple setting (random crop and flip only, SGD, cosine); label smoothing, mixup and Autoaugment are named only for the 200-epoch setting of the heavy models. The original train.py of the repository (early 2021) uses plain cross-entropy. Released 78.37 matches the 120-epoch table."
+  },
+  "repvgg_d2se.rvgg_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "unknown",
+   "extra_data": "no",
+   "source": "https://github.com/DingXiaoH/RepVGG",
+   "evidence": "Released after the paper (Apr 2021). The README gives only the layer layout, widths, training at 224 and testing at 320 on ImageNet; smoothing, mixup, cutmix and any teacher are not documented for this checkpoint."
+  },
+  "coat_lite_medium.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mlpc-ucsd/CoaT",
+   "evidence": "Paper recipe applied to a later release. The CoaT paper follows DeiT with MixUp, CutMix, random erasing, repeated augmentation and label smoothing. The README trains Lite Medium with the same script plus extra arguments (batch size, drop path, no EMA, warmup, gradient clip) that do not touch these."
+  },
+  "coat_lite_tiny.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2104.06399",
+   "evidence": "Paper: ImageNet-1k, 300 epochs, same procedures as DeiT with MixUp, CutMix, random erasing, repeated augmentation and label smoothing; no distillation."
+  },
+  "convit_tiny.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2103.10697",
+   "evidence": "One recipe for the paper's models. ConViT keeps all DeiT hyperparameters (schedule, augmentation, regularization) unchanged; DeiT Table 9 has label smoothing 0.1, mixup 0.8, cutmix 1.0. Main results are without distillation (distilled runs only in an appendix)."
+  },
+  "convit_base.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2103.10697",
+   "evidence": "One recipe for the paper's models. ConViT keeps all DeiT hyperparameters (schedule, augmentation, regularization) unchanged; DeiT Table 9 has label smoothing 0.1, mixup 0.8, cutmix 1.0. Main results are without distillation (distilled runs only in an appendix)."
+  },
+  "convmixer_768_32.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/locuslab/convmixer",
+   "evidence": "One recipe for the paper's models. README timm command: mixup 0.5, cutmix 0.5, RandAugment, random erasing; it has no smoothing flag, so the timm default 0.1 applies (label smoothing by default, not by an explicit flag). 768/32 used the same settings for 300 epochs. Paper: no pretraining or extra data."
+  },
+  "convmixer_1024_20_ks9_p14.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/locuslab/convmixer",
+   "evidence": "One recipe for the paper's models. README timm command: mixup 0.5, cutmix 0.5, RandAugment, random erasing; it has no smoothing flag, so the timm default 0.1 applies (label smoothing by default, not by an explicit flag). 768/32 used the same settings for 300 epochs. Paper: no pretraining or extra data."
+  },
+  "cs3darknet_focus_l.c2ns_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/cs3darknet_focus_l.c2ns_in1k",
+   "evidence": "Family-level. Card: based on RSB C recipes without repeated augmentation and with stronger mixup, no stochastic depth (SGD with Nesterov and AGC). RSB Table 10 lists C with label smoothing 0.1, mixup, cutmix 1.0. The exact run config is not published."
+  },
+  "darknet53.c2ns_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/darknet53.c2ns_in1k",
+   "evidence": "Family-level. Card: based on RSB C recipes without repeated augmentation and with stronger mixup, no stochastic depth (SGD with Nesterov and AGC). RSB Table 10 lists C with label smoothing 0.1, mixup, cutmix 1.0. The exact run config is not published."
+  },
+  "davit_small.msft_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2204.03645",
+   "evidence": "One recipe for the paper's models. Paper: uses the DeiT set of augmentation and regularization (without repeated augmentation and EMA), 300 epochs in timm, and states that neither token labeling nor distillation is used; tiny/small/base use no extra data. DeiT set: label smoothing 0.1, mixup 0.8, cutmix 1.0."
+  },
+  "davit_base.msft_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2204.03645",
+   "evidence": "One recipe for the paper's models. Paper: uses the DeiT set of augmentation and regularization (without repeated augmentation and EMA), 300 epochs in timm, and states that neither token labeling nor distillation is used; tiny/small/base use no extra data. DeiT set: label smoothing 0.1, mixup 0.8, cutmix 1.0."
+  },
+  "edgenext_x_small.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mmaaz60/EdgeNeXt",
+   "evidence": "Paper lists only random resized crop, flip, multi-scale sampler and EMA for these sizes (RandAugment for S only). Official main.py defaults: smoothing 0.1, mixup 0, cutmix 0 (label smoothing from the script default). These plain weights are not distilled; in EdgeNeXt only edgenext_small.usi_in1k and edgenext_base.usi_in1k use the USI distillation scheme, and edgenext_base.in21k_ft_in1k uses extra data."
+  },
+  "edgenext_xx_small.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mmaaz60/EdgeNeXt",
+   "evidence": "Paper lists only random resized crop, flip, multi-scale sampler and EMA for these sizes (RandAugment for S only). Official main.py defaults: smoothing 0.1, mixup 0, cutmix 0 (label smoothing from the script default). These plain weights are not distilled; in EdgeNeXt only edgenext_small.usi_in1k and edgenext_base.usi_in1k use the USI distillation scheme, and edgenext_base.in21k_ft_in1k uses extra data."
+  },
+  "efficientvit_b1.r288_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mit-han-lab/efficientvit/blob/master/applications/efficientvit_cls/configs/imagenet/default.yaml",
+   "evidence": "Official MIT config for the B series: label_smooth 0.1, mixup and cutmix operations, BCE loss, MESA disabled; the r288 run only widens the multi-resolution list. README: all classification models are trained on ImageNet-1k from random initialization, supervised."
+  },
+  "efficientvit_l2.r224_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mit-han-lab/efficientvit/blob/master/applications/efficientvit_cls/configs/imagenet/efficientvit_l2.yaml",
+   "evidence": "Official MIT config: label_smooth 0.1 (default file), mixup 0.4 and cutmix 0.4, BCE loss. Caution: the L2 config also enables MESA, an added loss toward the outputs of the EMA copy of the same model (self-distillation, no external teacher). Tagged no for distillation; change it if EMA self-teaching counts. ImageNet-1k only, random initialization."
+  },
+  "efficientvit_m1.r224_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/microsoft/Cream/tree/main/EfficientViT/classification",
+   "evidence": "One recipe for the paper's models. README trains M1 and M2 for 300 epochs with main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0, distillation type none. Released 68.4 and 70.8 equal the non-distilled paper table; the distilled 1000-epoch results are a separate table."
+  },
+  "efficientvit_m2.r224_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/microsoft/Cream/tree/main/EfficientViT/classification",
+   "evidence": "One recipe for the paper's models. README trains M1 and M2 for 300 epochs with main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0, distillation type none. Released 68.4 and 70.8 equal the non-distilled paper table; the distilled 1000-epoch results are a separate table."
+  },
+  "fastvit_sa24.apple_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2303.14189",
+   "evidence": "One recipe for the paper's models. Paper Table 15, all variants: mixup 0.8, cutmix 1.0, label smoothing 0.1, RandAugment, 300 epochs. Distilled models (RegNetY-16GF teacher) are released under a separate tag (apple_dist_in1k)."
+  },
+  "fastvit_sa36.apple_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2303.14189",
+   "evidence": "One recipe for the paper's models. Paper Table 15, all variants: mixup 0.8, cutmix 1.0, label smoothing 0.1, RandAugment, 300 epochs. Distilled models (RegNetY-16GF teacher) are released under a separate tag (apple_dist_in1k)."
+  },
+  "focalnet_small_lrf.ms_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2203.11926",
+   "evidence": "One recipe for the paper's models. Appendix A.2: follows Swin with RandAugment, Mixup, CutMix, random erasing, plus label smoothing and DropPath; trained on ImageNet-1k (22k models are separate)."
+  },
+  "focalnet_tiny_lrf.ms_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2203.11926",
+   "evidence": "One recipe for the paper's models. Appendix A.2: follows Swin with RandAugment, Mixup, CutMix, random erasing, plus label smoothing and DropPath; trained on ImageNet-1k (22k models are separate)."
+  },
+  "gcvit_base.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/NVlabs/GCVit",
+   "evidence": "One recipe for the paper's models. timm weights are remapped NVlabs checkpoints (no timm card on the Hub). Official train.py defaults: mixup 0.8, cutmix 1.0, smoothing 0.1; the model configs set cutmix 1.0 and do not override the rest. Paper: Swin-style training on ImageNet-1k without extra data."
+  },
+  "gcvit_tiny.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/NVlabs/GCVit",
+   "evidence": "One recipe for the paper's models. timm weights are remapped NVlabs checkpoints (no timm card on the Hub). Official train.py defaults: mixup 0.8, cutmix 1.0, smoothing 0.1; the model configs set cutmix 1.0 and do not override the rest. Paper: Swin-style training on ImageNet-1k without extra data."
+  },
+  "ghostnetv3_100.in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "yes",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2404.11202",
+   "evidence": "DISTILLED. The paper's final strategy combines re-parameterization with knowledge distillation (BEiTV2-B teacher) and rejects Mixup and CutMix as harmful for compact models; the 77.1 of the 1.0x model is the distilled result (76.1 without). The official train.py always adds a teacher loss. Label smoothing is not stated in the paper. The student sees ImageNet-1k images only, but the teacher was built with data beyond ImageNet-1k."
+  },
+  "ghostnet_100.in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/1911.11907",
+   "evidence": "Paper only says it follows most of the ShuffleNet training settings (learning rate 0.4, batch 1024); no training code or flags are published for the PyTorch checkpoint. No teacher and no extra data are mentioned."
+  },
+  "hgnet_tiny.paddle_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/ppcls/configs/ImageNet/PPHGNet/PPHGNet_tiny.yaml",
+   "evidence": "PaddleClas configs for PPHGNet tiny and small: cross-entropy with epsilon 0.1, Mixup alpha 0.2 and CutMix alpha 1.0 (each with probability 0.5), 600 epochs. The PaddleClas docs list the plain models (79.83 and 81.51) apart from the SSLD-distilled ones."
+  },
+  "hgnet_small.paddle_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/ppcls/configs/ImageNet/PPHGNet/PPHGNet_tiny.yaml",
+   "evidence": "PaddleClas configs for PPHGNet tiny and small: cross-entropy with epsilon 0.1, Mixup alpha 0.2 and CutMix alpha 1.0 (each with probability 0.5), 600 epochs. The PaddleClas docs list the plain models (79.83 and 81.51) apart from the SSLD-distilled ones."
+  },
+  "hrnet_w18_small_v2.gluon_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "unknown",
+   "extra_data": "unknown",
+   "source": "https://github.com/dmlc/gluon-cv/pull/1243",
+   "evidence": "Recipe not documented. GluonCV added its HRNet weights as converted from torch; the GluonCV model zoo page has no HRNet entry and a public request for training logs got no answer. At 78.2 top-1 it is 3 points above the official HRNet checkpoint of this size, so the paper recipe cannot be assumed."
+  },
+  "hrnet_w32.ms_in1k": {
+   "label_smoothing": "no",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/HRNet/HRNet-Image-Classification",
+   "evidence": "Official train.py uses plain cross-entropy with random resized crop and flip; the W32 config is SGD for 100 epochs. W32 (78.5) is in the standard table; the CutMix and SSLD checkpoints in that README are other, separate W18/W48 files."
+  },
+  "inception_next_small.sail_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2303.16900",
+   "evidence": "One recipe for the paper's models. Paper: DeiT hyperparameters without distillation; the hyperparameter table lists mixup, cutmix 1.0 and label smoothing 0.1; ImageNet-1k, 300 epochs."
+  },
+  "inception_next_tiny.sail_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2303.16900",
+   "evidence": "One recipe for the paper's models. Paper: DeiT hyperparameters without distillation; the hyperparameter table lists mixup, cutmix 1.0 and label smoothing 0.1; ImageNet-1k, 300 epochs."
+  },
+  "mambaout_tiny.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2405.07992",
+   "evidence": "Paper: DeiT scheme without distillation; hyperparameter table lists mixup 0.8, cutmix 1.0, label smoothing 0.1."
+  },
+  "mambaout_kobe.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/yuweihao/MambaOut",
+   "evidence": "Paper recipe applied to a later release. The Kobe variant was added in the repository after the paper; it is trained with the same train.py, whose defaults are mixup 0.8, cutmix 1.0, smoothing 0.1 (as in the paper table). Variant-specific flags are not listed."
+  },
+  "caformer_s36.sail_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2210.13452",
+   "evidence": "Paper Table 14 (ConvFormer and CAFormer on ImageNet-1K): mixup 0.8, cutmix 1.0, label smoothing 0.1; normal supervised training without external data or distillation."
+  },
+  "poolformer_m48.sail_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2111.11418",
+   "evidence": "PoolFormer paper: MixUp, CutMix, CutOut and RandAugment, label smoothing 0.1, 300 epochs on ImageNet-1k."
+  },
+  "gmlp_s16_224.ra3_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://gist.github.com/rwightman/d6c264a9001f9167e06c209f630b2cc6",
+   "evidence": "Weight-specific. The timm changelog links this gist for the 79.6 run; gmlp_s16.yaml has smoothing 0.1, mixup 0.5, cutmix 1.0, AdamW, 600 epochs."
+  },
+  "resmlp_big_24_224.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2105.03404",
+   "evidence": "Paper: Lamb optimizer, all other hyperparameters are the DeiT defaults (label smoothing 0.1, mixup 0.8, cutmix 1.0). This tag is the plain B24/8 checkpoint (file name ends in no_dist), not the distilled or the 22k one."
+  },
+  "mobilevitv2_050.cvnets_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2206.02680",
+   "evidence": "One recipe for the paper's models. Paper appendix: advanced augmentation (RandAugment, CutMix, MixUp, random erasing) for all width variants and cross-entropy with label smoothing; the cvnets config has mixup 0.2, cutmix 1.0, smoothing 0.1 and no teacher."
+  },
+  "mobilevitv2_075.cvnets_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2206.02680",
+   "evidence": "One recipe for the paper's models. Paper appendix: advanced augmentation (RandAugment, CutMix, MixUp, random erasing) for all width variants and cross-entropy with label smoothing; the cvnets config has mixup 0.2, cutmix 1.0, smoothing 0.1 and no teacher."
+  },
+  "mvitv2_small.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2112.01526",
+   "evidence": "One recipe for the paper's models. Paper: label smoothing 0.1, mixup, cutmix, random erasing and RandAugment; 300 epochs without external data or distillation models."
+  },
+  "mvitv2_base.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2112.01526",
+   "evidence": "One recipe for the paper's models. Paper: label smoothing 0.1, mixup, cutmix, random erasing and RandAugment; 300 epochs without external data or distillation models."
+  },
+  "nasnetalarge.tf_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/tensorflow/models/blob/master/research/slim/nets/nasnet/nasnet.py",
+   "evidence": "TF-slim code notes for training the large ImageNet model list label smoothing 0.1 and an auxiliary head weighted 0.4, as in the paper; the slim README reports the paper's 82.7. The checkpoint is dated 2017-10-04, before mixup and CutMix were published."
+  },
+  "nest_small_jx.goog_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2105.12723",
+   "evidence": "One recipe for the paper's models. Paper appendix: DeiT-style MixUp, CutMix, RandAugment and random erasing (no repeated augmentation); the official config sets mixup alpha 0.8 with smoothing 0.1. Trained from random initialization on ImageNet-1k; no distillation for ImageNet models."
+  },
+  "nest_base_jx.goog_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2105.12723",
+   "evidence": "One recipe for the paper's models. Paper appendix: DeiT-style MixUp, CutMix, RandAugment and random erasing (no repeated augmentation); the official config sets mixup alpha 0.8 with smoothing 0.1. Trained from random initialization on ImageNet-1k; no distillation for ImageNet models."
+  },
+  "nextvit_small.bd_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/bytedance/Next-ViT",
+   "evidence": "One recipe for the paper's models. README trains the ImageNet-1K models with main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0; the script has no distillation option. The weights trained on the 6M-image set are separate files (tag bd_ssld_6m)."
+  },
+  "nextvit_base.bd_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/bytedance/Next-ViT",
+   "evidence": "One recipe for the paper's models. README trains the ImageNet-1K models with main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0; the script has no distillation option. The weights trained on the 6M-image set are separate files (tag bd_ssld_6m)."
+  },
+  "nf_resnet50.ra2_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://gist.github.com/rwightman/37252f8d7d850a94e43f1fcb7b3b8322",
+   "evidence": "Family-level. The timm gist notes define ra2 as the ra3 scheme (RMSProp, mixup, random erasing, RandAugment) without CutMix; recorded RA2 configs use smoothing 0.1 and mixup 0.19; RSB procedure B agrees (label smoothing 0.1, mixup 0.2, no CutMix). The run config of this weight is not published."
+  },
+  "eca_nfnet_l2.ra3_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://gist.github.com/rwightman/37252f8d7d850a94e43f1fcb7b3b8322",
+   "evidence": "Family-level. The timm gist notes say that weights named ra3 use RMSProp with mixup, cutmix, random erasing and RandAugment; the ra3.yaml template has smoothing 0.1, mixup 0.2, cutmix 1.0. The run config of this weight is not published."
+  },
+  "pit_b_224.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/naver-ai/pit",
+   "evidence": "One recipe for the paper's models. README: pit_b 82.0 and pit_ti 73.0 are the DeiT-setting results; distilled weights are separate files. The paper used the official DeiT code for that setting, whose defaults are smoothing 0.1, mixup 0.8, cutmix 1.0."
+  },
+  "pit_ti_224.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/naver-ai/pit",
+   "evidence": "One recipe for the paper's models. README: pit_b 82.0 and pit_ti 73.0 are the DeiT-setting results; distilled weights are separate files. The paper used the official DeiT code for that setting, whose defaults are smoothing 0.1, mixup 0.8, cutmix 1.0."
+  },
+  "pnasnet5large.tf_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/1712.00559",
+   "evidence": "Paper: RMSProp, label smoothing 0.1, auxiliary classifier weighted 0.4, dropout; mixup is not in the listed setup. The TF-slim checkpoint (2017-12-13) reports the paper's 82.9; CutMix was published later."
+  },
+  "pvt_v2_b0.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/whai362/PVT/tree/v2/classification",
+   "evidence": "One recipe for the paper's models. Paper: follows DeiT with label smoothing, mixup and random erasing. Official main.py defaults are smoothing 0.1, mixup 0.8, cutmix 1.0 and the model configs do not override them (CutMix comes from the script default; the paper text does not name it). Distillation code is commented out."
+  },
+  "pvt_v2_b2.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/whai362/PVT/tree/v2/classification",
+   "evidence": "One recipe for the paper's models. Paper: follows DeiT with label smoothing, mixup and random erasing. Official main.py defaults are smoothing 0.1, mixup 0.8, cutmix 1.0 and the model configs do not override them (CutMix comes from the script default; the paper text does not name it). Distillation code is commented out."
+  },
+  "rdnet_large.nv_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2403.19588",
+   "evidence": "One recipe for the paper's models. Paper training table for 224 px: mixup 0.8, cutmix 1.0, label smoothing 0.1, RandAugment, 300 epochs on ImageNet-1k. The model card is at huggingface.co/naver-ai, not under timm."
+  },
+  "rdnet_small.nv_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2403.19588",
+   "evidence": "One recipe for the paper's models. Paper training table for 224 px: mixup 0.8, cutmix 1.0, label smoothing 0.1, RandAugment, 300 epochs on ImageNet-1k. The model card is at huggingface.co/naver-ai, not under timm."
+  },
+  "repghostnet_058.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/ChengpengChen/RepGhost/tree/main/work_dirs/train",
+   "evidence": "Weight-specific. The official repository keeps the args.yaml of each released model: smoothing 0.1, mixup 0, cutmix 0, SGD for 300 epochs, EMA, random erasing 0.2 (RandAugment only for 1.3x); no teacher. Accuracies 68.94 and 76.37 match the timm weights."
+  },
+  "repghostnet_130.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/ChengpengChen/RepGhost/tree/main/work_dirs/train",
+   "evidence": "Weight-specific. The official repository keeps the args.yaml of each released model: smoothing 0.1, mixup 0, cutmix 0, SGD for 300 epochs, EMA, random erasing 0.2 (RandAugment only for 1.3x); no teacher. Accuracies 68.94 and 76.37 match the timm weights."
+  },
+  "rexnet_300.nav_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/clovaai/rexnet",
+   "evidence": "README: ReXNets were trained with timm. The command is given for the 1.0x model only (SGD, RandAugment, random erasing, dropout; no smoothing flag, so the timm default 0.1; no mixup or cutmix flag), and it adds that a bigger model may need drop path or MixUp. The exact flags for this width are not published, so label smoothing is by default and from the 1.0x command, and mixup and cutmix are unknown."
+  },
+  "rexnet_130.nav_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/clovaai/rexnet",
+   "evidence": "README: ReXNets were trained with timm. The command is given for the 1.0x model only (SGD, RandAugment, random erasing, dropout; no smoothing flag, so the timm default 0.1; no mixup or cutmix flag), and it adds that a bigger model may need drop path or MixUp. The exact flags for this width are not published, so label smoothing is by default and from the 1.0x command, and mixup and cutmix are unknown."
+  },
+  "selecsls60.in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mehtadushy/SelecSLS-Pytorch",
+   "evidence": "README: trained with timm using cosine schedule, random erasing, EMA and color jitter; no command is given, so label smoothing (timm default 0.1) and mixup are not documented. The weights are from 2019; timm added CutMix in Aug 2020."
+  },
+  "selecsls42b.in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/mehtadushy/SelecSLS-Pytorch",
+   "evidence": "README: trained with timm using cosine schedule, random erasing, EMA and color jitter; no command is given, so label smoothing (timm default 0.1) and mixup are not documented. The weights are from 2019; timm added CutMix in Aug 2020."
+  },
+  "sequencer2d_s.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2205.01972",
+   "evidence": "One recipe for the paper's models. Paper hyperparameter table: mixup 0.8, cutmix 1.0, label smoothing 0.1, RandAugment, random erasing; ImageNet-1k from scratch."
+  },
+  "sequencer2d_l.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2205.01972",
+   "evidence": "One recipe for the paper's models. Paper hyperparameter table: mixup 0.8, cutmix 1.0, label smoothing 0.1, RandAugment, random erasing; ImageNet-1k from scratch."
+  },
+  "shvit_s3.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/ysj9909/SHViT",
+   "evidence": "One recipe for the paper's models. README commands use main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0, distillation type none. Released 72.8 (S1) and 77.4 (S3) are the non-distilled paper numbers; results with the DeiT distillation recipe are a separate table."
+  },
+  "shvit_s1.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/ysj9909/SHViT",
+   "evidence": "One recipe for the paper's models. README commands use main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0, distillation type none. Released 72.8 (S1) and 77.4 (S3) are the non-distilled paper numbers; results with the DeiT distillation recipe are a separate table."
+  },
+  "starnet_s2.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2403.19967",
+   "evidence": "One recipe for the paper's models. Paper Table 12: label smoothing 0.1, mixup 0.8, cutmix 0.2, weak RandAugment, no EMA. The paper says distillation could raise accuracy but does not use it."
+  },
+  "starnet_s1.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2403.19967",
+   "evidence": "One recipe for the paper's models. Paper Table 12: label smoothing 0.1, mixup 0.8, cutmix 0.2, weak RandAugment, no EMA. The paper says distillation could raise accuracy but does not use it."
+  },
+  "tiny_vit_5m_224.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/microsoft/Cream/tree/main/TinyViT",
+   "evidence": "README lists these as IN-1k models trained from scratch with the configs in configs/1k (21M is stated as without distillation). Config defaults: label smoothing 0.1, mixup 0.8, cutmix 1.0, distillation disabled. The distilled 22k weights have other tags (dist_in22k)."
+  },
+  "tiny_vit_21m_224.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/microsoft/Cream/tree/main/TinyViT",
+   "evidence": "README lists these as IN-1k models trained from scratch with the configs in configs/1k (21M is stated as without distillation). Config defaults: label smoothing 0.1, mixup 0.8, cutmix 1.0, distillation disabled. The distilled 22k weights have other tags (dist_in22k)."
+  },
+  "tnt_s_legacy_patch16_224.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2103.00112",
+   "evidence": "One recipe for the paper's models. Paper: DeiT training strategy with label smoothing, RandAugment, Mixup, CutMix, random erasing and repeated augmentation on ImageNet-1k."
+  },
+  "tnt_b_patch16_224.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2103.00112",
+   "evidence": "One recipe for the paper's models. Paper: DeiT training strategy with label smoothing, RandAugment, Mixup, CutMix, random erasing and repeated augmentation on ImageNet-1k."
+  },
+  "tresnet_m.miil_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2003.13630",
+   "evidence": "One recipe for the paper's models. Paper basic training: 300 epochs, SGD with one-cycle, AutoAugment, Cutout, label smoothing and true weight decay; mixup and CutMix are not part of it. timm accuracies (80.8 and 81.5) equal the paper's ImageNet-1k results; the 21k-pretrained weight has another tag."
+  },
+  "tresnet_l.miil_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2003.13630",
+   "evidence": "One recipe for the paper's models. Paper basic training: 300 epochs, SGD with one-cycle, AutoAugment, Cutout, label smoothing and true weight decay; mixup and CutMix are not part of it. timm accuracies (80.8 and 81.5) equal the paper's ImageNet-1k results; the 21k-pretrained weight has another tag."
+  },
+  "twins_pcpvt_small.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/Meituan-AutoML/Twins",
+   "evidence": "One recipe for the paper's models. Paper: 300 epochs with the DeiT regularization setting; the official DeiT-based main.py defaults are smoothing 0.1, mixup 0.8, cutmix 1.0."
+  },
+  "twins_pcpvt_large.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/Meituan-AutoML/Twins",
+   "evidence": "One recipe for the paper's models. Paper: 300 epochs with the DeiT regularization setting; the official DeiT-based main.py defaults are smoothing 0.1, mixup 0.8, cutmix 1.0."
+  },
+  "visformer_tiny.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/danczs/Visformer/issues/2",
+   "evidence": "Community-trained weight. The contributor posted the command: official main.py with only drop path changed; its defaults are smoothing 0.1, mixup 0.8, cutmix 1.0 (no teacher)."
+  },
+  "visformer_small.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/danczs/Visformer/issues/2",
+   "evidence": "Community-trained weight. The contributor says it was trained with the provided official code on ImageNet-1k only; flags are not listed, and the official main.py defaults are smoothing 0.1, mixup 0.8, cutmix 1.0 (answers taken from the script defaults)."
+  },
+  "ese_vovnet57b.ra4_e3600_r256_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://gist.github.com/rwightman/f6705cb65c03daeebca8aa129b1b94ad",
+   "evidence": "Family-level. Card: trained in timm with the MobileNetV4-inspired RA4 recipe. All recorded ra4 configs use smoothing 0.1, but mixup and cutmix differ by model (0 and 0 in the 3600-epoch ResNet configs, up to 0.8 and 1.0 for large models), and no config is recorded for this weight."
+  },
+  "ese_vovnet19b_dw.ra_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/ese_vovnet19b_dw.ra_in1k",
+   "evidence": "Family-level only; no run config is published. Card: RandAugment RA recipe, related to RSB procedure B (Table 10: label smoothing 0.1, no CutMix). Mixup is unknown because sources conflict: RSB B lists mixup 0.2, but the timm RA2 gist says mixup was added with RA2."
+  },
+  "xception71.tf_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/1802.02611",
+   "evidence": "DeepLabv3+ paper: the Xception backbone is pretrained on ImageNet-1k with a protocol similar to the Xception paper (Nesterov momentum, learning rate 0.05, asynchronous training on 50 GPUs); smoothing and augmentation are not stated, and the DeepLab model zoo gives no recipe. The checkpoints date from 2018, before CutMix."
+  },
+  "xception65.tf_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/1802.02611",
+   "evidence": "DeepLabv3+ paper: the Xception backbone is pretrained on ImageNet-1k with a protocol similar to the Xception paper (Nesterov momentum, learning rate 0.05, asynchronous training on 50 GPUs); smoothing and augmentation are not stated, and the DeepLab model zoo gives no recipe. The checkpoints date from 2018, before CutMix."
+  },
+  "xcit_large_24_p8_224.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2106.09681",
+   "evidence": "One recipe for the paper's models. Paper: training follows the DeiT recipe for 400 epochs (label smoothing 0.1, mixup 0.8, cutmix 1.0). These are the plain weights; distilled ones have the tag fb_dist_in1k."
+  },
+  "xcit_tiny_12_p8_224.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2106.09681",
+   "evidence": "One recipe for the paper's models. Paper: training follows the DeiT recipe for 400 epochs (label smoothing 0.1, mixup 0.8, cutmix 1.0). These are the plain weights; distilled ones have the tag fb_dist_in1k."
+  },
+  "convnext_base.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2201.03545",
+   "evidence": "Paper: Mixup, Cutmix, RandAugment, random erasing, stochastic depth and label smoothing; 300 epochs on ImageNet-1k (22k-pretrained weights have other tags)."
+  },
+  "convnext_tiny_hnf.a2h_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/huggingface/pytorch-image-models/blob/main/hfdocs/source/changes.mdx",
+   "evidence": "timm changelog (Mar 2022): trained with a recipe close to RSB A2, 82.2 top-1. A2 itself has no label smoothing, mixup 0.1, cutmix 1.0 and BCE loss, but the actual hyperparameters of this run are not published, so the three fields stay unknown."
+  },
+  "densenetblur121d.ra_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/densenetblur121d.ra_in1k",
+   "evidence": "Family-level only; no run config is published. Card: RandAugment RA recipe, related to RSB procedure B (Table 10: label smoothing 0.1, no CutMix); these weights also predate CutMix in timm (Aug 2020). Mixup is unknown because sources conflict: RSB B lists mixup 0.2, but the timm RA2 gist says mixup was added with RA2."
+  },
+  "densenet121.ra_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/densenet121.ra_in1k",
+   "evidence": "Family-level only; no run config is published. Card: RandAugment RA recipe, related to RSB procedure B (Table 10: label smoothing 0.1, no CutMix); these weights also predate CutMix in timm (Aug 2020). Mixup is unknown because sources conflict: RSB B lists mixup 0.2, but the timm RA2 gist says mixup was added with RA2."
+  },
+  "tf_efficientnet_el.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/tensorflow/tpu/tree/master/models/official/efficientnet/edgetpu",
+   "evidence": "From code defaults. The EdgeTPU README points to the shared EfficientNet training script; its flag defaults are label_smoothing 0.1 and mixup_alpha 0.0, and it has no CutMix option. The flags of the released checkpoint are not listed separately."
+  },
+  "tf_efficientnet_b2.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/tensorflow/tpu/tree/master/models/official/efficientnet",
+   "evidence": "From code defaults. README: this is the baseline-preprocessing checkpoint (AutoAugment, RandAugment, AdvProp and NoisyStudent ones are separate). The official main.py defaults are label_smoothing 0.1 and mixup_alpha 0.0, with no CutMix option; the README training command uses the defaults."
+  },
+  "inception_v3.tf_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/tensorflow/models/tree/master/research/slim",
+   "evidence": "TF-slim README: checkpoint of 2016-08-28, trained internally at Google on ILSVRC-2012, recipe not given; its 78.0 differs from the paper's 78.8, so it is not the paper's run. The paper's own Inception-v3 uses label smoothing 0.1, which makes yes likely but not documented. The checkpoint predates mixup and CutMix."
+  },
+  "inception_v4.tf_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/tensorflow/models/tree/master/research/slim",
+   "evidence": "TF-slim README: checkpoint of 2016-09-09, trained internally at Google on ILSVRC-2012, recipe not given. The paper's training section (RMSProp, exponential decay) does not mention label smoothing. The checkpoint predates mixup and CutMix."
+  },
+  "maxvit_base_tf_384.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2204.01697",
+   "evidence": "Paper Table 12, ImageNet-1K pretraining at 224 and fine-tuning at 384: RandAugment, mixup alpha 0.8, label smoothing 0.1. CutMix is not in the table and does not appear anywhere in the paper."
+  },
+  "maxvit_rmlp_tiny_rw_256.sw_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://gist.github.com/rwightman/943c0fe59293b44024bbd2d5d23e6303",
+   "evidence": "Family-level. timm sw recipes are DeiT/Swin-style; every recorded config in this gist, including the sibling maxvit_tiny_rw_256, has smoothing 0.1, mixup 0.8 (or 0.2) and cutmix 1.0. No config is recorded for this exact weight."
+  },
+  "mobilenetv2_050.lamb_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "unknown",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/mobilenetv2_050.lamb_in1k",
+   "evidence": "Card: a LAMB recipe similar to RSB A2 but 50% longer, with EMA and no CutMix. A2 itself has no label smoothing and mixup 0.1, but the card's other bullets contradict the optimizer and no run config is published, so smoothing and mixup stay unknown."
+  },
+  "lcnet_075.ra2_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/lcnet_075.ra2_in1k",
+   "evidence": "Family-level. Card: RandAugment RA2 recipe, published as RSB procedure B (Table 10: label smoothing 0.1, mixup 0.2, no CutMix); the timm gist notes also define ra2 as mixup without CutMix, and recorded RA2 configs use smoothing 0.1. The run config of this weight is not published."
+  },
+  "regnety_016.pycls_in1k": {
+   "label_smoothing": "no",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/facebookresearch/pycls/blob/main/MODEL_ZOO.md",
+   "evidence": "pycls model zoo: basic settings without training enhancements, SGD, 100 epochs. The RegNetY-1.6GF config sets none of label smoothing, mixup or cutmix (code defaults are 0), and the paper says no regularization except weight decay."
+  },
+  "regnety_160.deit_in1k": {
+   "label_smoothing": "unknown",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2012.12877",
+   "evidence": "DeiT paper: this RegNetY-16GF was trained by the DeiT authors with the same data and the same data augmentation as DeiT (which includes mixup and cutmix), reaching 82.9. Label smoothing is not stated for it. It is the teacher, not a distilled student."
+  },
+  "ecaresnet269d.ra2_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/ecaresnet269d.ra2_in1k",
+   "evidence": "Family-level. Card: RandAugment RA2 recipe, published as RSB procedure B (Table 10: label smoothing 0.1, mixup 0.2, no CutMix); the timm gist notes also define ra2 as mixup without CutMix, and recorded RA2 configs use smoothing 0.1. The run config of this weight is not published."
+  },
+  "resnet26t.ra2_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://huggingface.co/timm/resnet26t.ra2_in1k",
+   "evidence": "Family-level. Card: RandAugment RA2 recipe, published as RSB procedure B (Table 10: label smoothing 0.1, mixup 0.2, no CutMix); the timm gist notes also define ra2 as mixup without CutMix, and recorded RA2 configs use smoothing 0.1. The run config of this weight is not published."
+  },
+  "swinv2_cr_small_224.sw_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/huggingface/pytorch-image-models/blob/main/hfdocs/source/hparams.mdx",
+   "evidence": "Family-level. The timm hparams doc defines sw as DeiT/Swin-style recipes; all recorded sw configs in the linked gist use smoothing 0.1, mixup and cutmix 1.0. No config is recorded for this weight."
+  },
+  "swin_s3_tiny_224.ms_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "unknown",
+   "cutmix": "unknown",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2111.14725",
+   "evidence": "S3 (AutoFormerV2) paper: the supernet is trained DeiT-like with label smoothing 0.1 and stochastic depth 0.2, and in-place distillation is said not to be used. Mixup and cutmix are not stated, and the repository ships evaluation code only."
+  },
+  "vit_small_patch16_rope_mixed_ape_224.naver_in1k": {
+   "label_smoothing": "no",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/naver-ai/rope-vit/tree/main/deit",
+   "evidence": "Official ViT-S command (DeiT-III 400-epoch recipe): smoothing 0.0 with BCE loss and 3-Augment; mixup and cutmix stay at the script defaults 0.8 and 1.0, as in the DeiT-III table for ImageNet-1k. No distillation."
+  },
+  "deit_tiny_patch16_224.fb_in1k": {
+   "label_smoothing": "yes",
+   "mixup": "yes",
+   "cutmix": "yes",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://arxiv.org/abs/2012.12877",
+   "evidence": "DeiT paper Table 9: label smoothing 0.1, mixup 0.8, cutmix 1.0, RandAugment, random erasing, repeated augmentation. This is the plain tiny model, not the distilled one."
+  },
+  "ghostnetv2_100.in1k": {
+   "label_smoothing": "yes",
+   "mixup": "no",
+   "cutmix": "no",
+   "distillation": "no",
+   "extra_data": "no",
+   "source": "https://github.com/huawei-noah/Efficient-AI-Backbones/tree/master/ghostnetv2_pytorch",
+   "evidence": "From the default of the script. The official README trains the 1.0x model on ImageNet with a copy of the timm 0.3.2 training script (RMSProp, 450 epochs, RandAugment, random erasing, EMA). The command has no smoothing, mixup, or CutMix flag and no teacher, so the timm default of label smoothing 0.1 applies. The 75.3 of the README is the accuracy of the timm weight. This weight took the place of ghostnetv3_100.in1k in the draw."
+  }
+ }
+}

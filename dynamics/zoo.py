@@ -1,4 +1,4 @@
-"""Amendment A16: evaluate public ImageNet-1k models. Nothing is trained.
+"""Amendments A16 and A17: evaluate public ImageNet-1k models. Nothing is trained.
 
 Run from code/ inside the x9 container on the HPC (see README.md):
 
@@ -8,7 +8,11 @@ Run from code/ inside the x9 container on the HPC (see README.md):
 
 For each model of the frozen list `dynamics/frozen/a16_models.json`: the weights
 are downloaded by torchvision, each image gets the preprocessing of the weight,
-and the feature is the input of the last linear layer of the network. The 23
+and the feature is the input of the last linear layer of the network. With
+`--list a17` the models are the timm weights of `dynamics/frozen/a17_models.json`
+(amendment A17): timm downloads the weights, the preprocessing is the one of the
+published accuracy of timm (the test size of the weight), and the result files go
+to <out-root>/zoo_timm. The 23
 scores are fitted on the fixed training subset and scored on the validation
 images, on two stand-in sets made from a fixed subset of the validation images
 (class blends and shuffled patches), and on the OOD sets. One result file is
@@ -32,7 +36,7 @@ from PIL import Image
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, Dataset, Subset
 
-from dynamics import zoo_list
+from dynamics import zoo_list, zoo_timm_list
 from dynamics.config import (
     DEFAULT_PRECISION,
     EXTRA_LIMIT,
@@ -55,6 +59,10 @@ from dynamics.scores import extra_scores
 #: The three models of the pilot.
 PILOT = ("resnet50-v1", "vit_b_16-v1", "efficientnet_b0-v1")
 RESULTS = "zoo"
+#: Per list name: the loader of the list, the models of its pilot, and the folder
+#: of its result files.
+LISTS = {"a16": (zoo_list.load, lambda: list(PILOT), RESULTS),
+         "a17": (zoo_timm_list.load, zoo_timm_list.pilot, "zoo_timm")}
 #: Validation images of each class in the two stand-in sets, and their seed.
 STANDIN_PER_CLASS = 10
 STANDIN_SEED = 16
@@ -77,6 +85,19 @@ def last_linear(model: torch.nn.Module) -> torch.nn.Linear:
     return layers[-1]
 
 
+def head_of(model: torch.nn.Module) -> torch.nn.Linear:
+    """The head of a network: the classifier that a timm network names, if it is
+    one linear layer, else the last linear layer. A torchvision network names no
+    classifier, so its head is its last linear layer.
+
+    Raises:
+        ValueError: If the network has no linear layer.
+    """
+    getter = getattr(model, "get_classifier", None)
+    head = getter() if callable(getter) else None
+    return head if isinstance(head, torch.nn.Linear) else last_linear(model)
+
+
 def head_parameters(head: torch.nn.Linear) -> tuple[torch.Tensor, torch.Tensor]:
     """The weights and the bias of a head in float32. A head with no bias (the
     last layer of MaxViT) has a bias of 0."""
@@ -86,9 +107,37 @@ def head_parameters(head: torch.nn.Linear) -> tuple[torch.Tensor, torch.Tensor]:
     return weight, bias
 
 
+def load_timm(entry: dict) -> tuple[torch.nn.Module, object]:
+    """The network of one timm entry with its weights, and the preprocessing that
+    timm uses for the published accuracy of the weight.
+
+    Raises:
+        RuntimeError: If the installed timm is not the version of the list.
+        ValueError: If the preprocessing is not the one of the list.
+    """
+    import timm
+    from timm.data import create_transform, resolve_data_config
+
+    if timm.__version__ != zoo_timm_list.TIMM:
+        raise RuntimeError(f"the list needs timm {zoo_timm_list.TIMM}, not "
+                           f"{timm.__version__}")
+    model = timm.create_model(entry["model"], pretrained=True).eval()
+    config = resolve_data_config(pretrained_cfg=model.pretrained_cfg,
+                                 use_test_size=True)
+    found = (list(config["input_size"][1:]), config["crop_pct"],
+             config["interpolation"])
+    wanted = (entry["crop_size"] * 2, entry["crop_pct"], entry["interpolation"])
+    if found != wanted:
+        raise ValueError(f"the preprocessing of {entry['id']} is {found}, and the "
+                         f"list has {wanted}")
+    return model, create_transform(**config)
+
+
 def load_model(entry: dict) -> tuple[torch.nn.Module, object]:
     """The network of one entry with its weights, and the preprocessing of the
     weights."""
+    if entry.get("library") == "timm":
+        return load_timm(entry)
     from torchvision import models
 
     weights = models.get_model_weights(entry["model"])[entry["weights"]]
@@ -338,20 +387,20 @@ def evaluate_model(entry: dict, imagenet: Path, textures: Path | None,
                    device: torch.device, workers: int = 8,
                    precision: str = DEFAULT_PRECISION, amp: bool = True,
                    extra_limit: int | None = EXTRA_LIMIT, limit: int | None = None,
-                   batch_size: int | None = None) -> None:
+                   batch_size: int | None = None, results: str = RESULTS) -> None:
     """Evaluate one model and write its result file. Does nothing if it exists.
 
     Raises:
         ValueError: If the head does not have one output for each ID class.
     """
-    target = Path(out_root) / RESULTS / f"{entry['id']}.json"
+    target = Path(out_root) / results / f"{entry['id']}.json"
     if target.exists():
         print(f"[zoo] {entry['id']}: already complete", flush=True)
         return
     began = time.time()
     model, transform = load_model(entry)
     model = model.to(device).eval()
-    head = last_linear(model)
+    head = head_of(model)
     sets = datasets(transform, imagenet, textures, extra, extra_limit, limit)
     n_classes = len(class_folders(Path(imagenet) / "train"))
     if head.out_features != n_classes:
@@ -381,6 +430,10 @@ def evaluate_model(entry: dict, imagenet: Path, textures: Path | None,
                limit=limit, torchvision=torchvision.__version__,
                seconds_extract=round(extracted - began, 1),
                seconds=round(time.time() - began, 1))
+    if entry.get("library") == "timm":
+        import timm
+
+        out.update(library="timm", timm=timm.__version__)
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_suffix(".tmp")
     temporary.write_text(json.dumps(out))
@@ -391,7 +444,8 @@ def evaluate_model(entry: dict, imagenet: Path, textures: Path | None,
           f"{failed} scores with a problem, {out['seconds']}s", flush=True)
 
 
-def chosen(names: list[str], listed: list[dict]) -> list[dict]:
+def chosen(names: list[str], listed: list[dict],
+           pilot: tuple[str, ...] | list[str] = PILOT) -> list[dict]:
     """The entries for `pilot`, `all`, or a list of ids.
 
     Raises:
@@ -400,7 +454,7 @@ def chosen(names: list[str], listed: list[dict]) -> list[dict]:
     by_id = {entry["id"]: entry for entry in listed}
     if names == ["all"]:
         return listed
-    wanted = list(PILOT) if names == ["pilot"] else names
+    wanted = list(pilot) if names == ["pilot"] else names
     unknown = [name for name in wanted if name not in by_id]
     if unknown:
         raise ValueError(f"not in the frozen list: {', '.join(unknown)}")
@@ -411,6 +465,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--models", nargs="+", required=True, metavar="ID",
                         help="`pilot`, `all`, or ids of the frozen list")
+    parser.add_argument("--list", choices=sorted(LISTS), default="a16",
+                        help="a16: the torchvision weights (default); a17: the "
+                             "timm weights of amendment A17")
     parser.add_argument("--imagenet-dir", required=True,
                         help="folder of dynamics.extract_imagenet, with train/ and "
                              "val/")
@@ -438,8 +495,10 @@ def main() -> None:
         extra.append((name, Path(folder)))
     if args.limit is None and not (args.textures_dir and extra):
         parser.error("protocol runs need --textures-dir and the extra OOD sets")
+    load_list, pilot, results = LISTS[args.list]
     try:
-        entries = chosen(args.models, zoo_list.load())
+        entries = chosen(args.models, load_list(), pilot()
+                         if args.models == ["pilot"] else ())
     except ValueError as error:
         parser.error(str(error))
     imagenet = Path(args.imagenet_dir)
@@ -461,7 +520,7 @@ def main() -> None:
                            Path(args.textures_dir) if args.textures_dir else None,
                            extra, Path(args.out_root), device, args.workers,
                            args.precision, not args.no_amp, args.extra_limit,
-                           args.limit, args.batch_size)
+                           args.limit, args.batch_size, results)
         except Exception:  # noqa: BLE001 - continue with the next model
             failures.append(entry["id"])
             print(f"[zoo] {entry['id']} FAILED\n{traceback.format_exc()}", flush=True)

@@ -54,11 +54,11 @@ COUNTS = {"val": 50_000, "train": 100_000, "blend": 10_000, "shuffle": 10_000}
 SHORT = 3
 
 
-def read(root: Path) -> tuple[analyze_e.Tables, pd.DataFrame]:
+def read(root: Path, folder: str = RESULTS) -> tuple[analyze_e.Tables, pd.DataFrame]:
     """The result files as tables, and one row of facts for each model."""
     parts: dict[str, list[dict]] = {"metrics": [], "descriptors": []}
     facts = []
-    for path in sorted((Path(root) / RESULTS).glob("*.json")):
+    for path in sorted((Path(root) / folder).glob("*.json")):
         out = json.loads(path.read_text())
         key = {"run": out["model"], "recipe": out["model"], "seed": 0, "held_out": -1,
                "epoch": 1}
