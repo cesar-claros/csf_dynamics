@@ -16,3 +16,4 @@ dyn_*.log
 dyn_results/
 *.tgz
 torch_cache/
+hf_cache/
