@@ -210,9 +210,10 @@ def pilot_list(per_pool: int = 8) -> list[dict]:
              "pool": pool} for pool in ak.POOLS for number in range(per_pool)]
 
 
-def fabricate_pilot(tmp_path, listed, changed=(), failing=()):
+def fabricate_pilot(tmp_path, listed, changed=(), failing=(), unstable=()):
     """Pilot files for fabricated stored files. `good` follows the far target,
-    `copy` is the blend task, `flat` has no spread, and `weak` is noise."""
+    `copy` is the blend task, `flat` has no spread, and `weak` is noise. For a
+    model in `unstable`, the score that gate C leaves out has another value."""
     folder = tmp_path / ak.RESULTS
     folder.mkdir(exist_ok=True)
     for number, entry in enumerate(listed):
@@ -231,6 +232,9 @@ def fabricate_pilot(tmp_path, listed, changed=(), failing=()):
                      for task, value in values.items()]
         if entry["id"] in changed:
             rows[0]["auroc"] += 0.05
+        if entry["id"] in unstable:
+            next(row for row in rows if row["set"] == "shuffle"
+                 and row["csf"] in ak.UNSTABLE)["auroc"] += 0.05
         out = {**stored, "metrics": rows, "pool": entry["pool"],
                "errors": {"pNML": "LinAlgError"} if entry["id"] in failing else {}}
         (folder / f"{entry['id']}.json").write_text(json.dumps(out))
@@ -258,7 +262,7 @@ def test_readings_of_the_pilot_on_fabricated_models(tmp_path, monkeypatch):
     fabricate_pilot(tmp_path, listed)
     text = run("--allow-other-list")
     assert "Models that stay: 16 (torchvision 8, timm 8)" in text
-    assert "No model leaves." in text and "**Gate C.**" in text
+    assert "No model leaves." in text and "**Gate C** (22 scores" in text
     for title in ("## Reading 1: rank agreement", "## Each new task against",
                   "## Readings 2 and 3", "## Decision: accepted tasks",
                   "## Reading 4: the direct choice"):
@@ -285,17 +289,36 @@ def test_readings_of_the_pilot_on_fabricated_models(tmp_path, monkeypatch):
     # The direct choice with the accepted task is in the table.
     assert "the three and good" in set(found["direct"]["tasks"])
     assert set(found["direct"]["choice"]) == {"mean_rank", "maximin"}
+    assert "**Gate C** (22 scores, without KPCA_RecError)" in text
+    assert "is above 0.01 for 0 of 16 models" in text
     # Gates: a changed value of an existing task, and a score with an error.
     fabricate_pilot(tmp_path, listed, changed=("to1",), failing=("ti2",))
     text = run("--allow-other-list")
     assert "Models that leave (2)" in text and "gate C: an existing task" in text
     assert "gate S: pNML" in text and "Models that stay: 14" in text
+    # The score that gate C leaves out removes no model, and its change is reported.
+    fabricate_pilot(tmp_path, listed, unstable=("to1", "to3", "ti5"))
+    text = run("--allow-other-list")
+    assert "No model leaves." in text and "Models that stay: 16" in text
+    assert "is above 0.01 for 3 of 16 models" in text
+    assert "value is 0.0500 over the models" in text
     # More than four models of a half leave: no decision.
     fabricate_pilot(tmp_path, listed, changed=tuple(f"to{n}" for n in range(5)))
     with pytest.raises(SystemExit, match="no decision"):
         run("--allow-other-list")
     assert "**The pilot gives no decision:**" in out.read_text()
     assert "## Reading 1" not in out.read_text()
+
+
+def test_gate_c_leaves_the_unstable_score_out():
+    assert ak.UNSTABLE == ("KPCA_RecError",) and set(ak.UNSTABLE) < set(ALL_CSFS)
+    columns = pd.MultiIndex.from_product([list(ak.OLD_TASKS), list(ALL_CSFS)])
+    old = pd.DataFrame(0.7, index=["m"], columns=columns)
+    new = old.copy()
+    new.loc["m", ("blend", "KPCA_RecError")] += 0.2
+    new.loc["m", ("shuffle", "MSR")] += 0.004
+    assert ak.old_gap(new, old, ["m"]).iloc[0] == pytest.approx(0.004)
+    assert ak.old_gap(new, old, ["m"], unstable=True).iloc[0] == pytest.approx(0.2)
 
 
 def test_at_most_two_tasks_are_accepted_for_different_targets():

@@ -11,7 +11,9 @@ tasks. No claim comes from the pilot.
 
 Gates: C (the three existing tasks and the accuracy agree with the stored
 values) and S (every score has a finite value on every task). A model that fails
-a gate leaves.
+a gate leaves. Gate C leaves KPCA_RecError out, by an amendment of 2026-11-27
+that was made before any result of the pilot: a control of amendment A17 showed
+that this one score is not stable between two runs. Its change is reported apart.
 
 Protocol: ../documentation/standin_tasks_pilot_plan_2026-11-27.md
 """
@@ -47,6 +49,8 @@ LARGE = 0.15
 #: Gate C: largest difference of an AUROC and of the accuracy from the stored value.
 CONSISTENCY = 0.01
 ACCURACY = 0.0005
+#: Scores that gate C leaves out (amendment of 2026-11-27, before any result).
+UNSTABLE = ("KPCA_RecError",)
 #: The pilot gives no decision if more models of a half leave.
 MAX_LEFT = 4
 
@@ -89,6 +93,16 @@ def rank_agreement(first: pd.DataFrame, second: pd.DataFrame) -> pd.Series:
         return pd.Series((a * b).sum(axis=1) / scale, index=first.index)
 
 
+def old_gap(new: pd.DataFrame, old: pd.DataFrame, names: list[str],
+            unstable: bool = False) -> pd.Series:
+    """Per model, the largest difference of an AUROC of an existing task from the
+    stored value: over the scores of gate C, or over the scores that it leaves out."""
+    tasks = list(OLD_TASKS)
+    gap = (new.loc[names, tasks] - old.loc[names, tasks]).abs()
+    inside = gap.columns.get_level_values(1).isin(UNSTABLE)
+    return gap.loc[:, inside if unstable else ~inside].max(axis=1)
+
+
 def gates(listed: pd.DataFrame, facts: pd.DataFrame, new: pd.DataFrame,
           old: pd.DataFrame, accuracy: pd.Series) -> pd.DataFrame:
     """One row for each model that leaves, with the reason."""
@@ -104,8 +118,7 @@ def gates(listed: pd.DataFrame, facts: pd.DataFrame, new: pd.DataFrame,
             reason = (f"gate C: accuracy {100 * facts.at[name, 'val_accuracy']:.2f}, "
                       f"stored {100 * accuracy[name]:.2f}")
         else:
-            gap = float((new.loc[name, list(OLD_TASKS)]
-                         - old.loc[name, list(OLD_TASKS)]).abs().max())
+            gap = float(old_gap(new, old, [name]).iloc[0])
             if gap <= CONSISTENCY:
                 continue
             reason = f"gate C: an existing task differs by {gap:.3f} from the stored value"
@@ -243,16 +256,24 @@ def report(listed: pd.DataFrame, root: Path) -> tuple[str, str]:
         f"more than {MAX_LEFT} models of a half leave "
         f"({', '.join(f'{name} {gone[name]}' for name in POOLS)})")
     present = [name for name in kept if name in facts.index]
-    gap = (new.loc[present, list(OLD_TASKS)] - old.loc[present, list(OLD_TASKS)]).abs()
+    gap = old_gap(new, old, present)
+    apart = old_gap(new, old, [name for name in listed.index if name in facts.index],
+                    unstable=True)
     sections = [("Models and gates", (
         f"List: `{standin_list.PATH.name}`, {len(listed)} models. Result files: "
         f"{len(facts)}. Models that stay: {len(kept)} "
         f"({', '.join(f'{name} {int((listed.loc[kept, 'pool'] == name).sum())}' for name in POOLS)})."
-        + f"\n\n**Gate C.** Largest difference of an AUROC of an existing task "
-        f"from the stored value, over the models that stay: "
-        f"{float(gap.max().max()) if present else float('nan'):.4f} (limit "
+        + f"\n\n**Gate C** ({len(ALL_CSFS) - len(UNSTABLE)} scores, without "
+        f"{', '.join(UNSTABLE)}). Largest difference of an AUROC of an existing "
+        f"task from the stored value, over the models that stay: "
+        f"{float(gap.max()) if present else float('nan'):.4f} (limit "
         f"{CONSISTENCY}). **Gate S.** Tasks in the files: {len(tasks)} new and "
         f"{len(OLD_TASKS)} existing."
+        + f"\n\n**{', '.join(UNSTABLE)}, reported apart** (amendment of "
+        f"2026-11-27, before any result): its largest difference from the stored "
+        f"value is {float(apart.max()):.4f} over the models (median "
+        f"{float(apart.median()):.4f}), and it is above {CONSISTENCY} for "
+        f"{int((apart > CONSISTENCY).sum())} of {len(apart)} models."
         + ("\n\nNo model leaves." if left.empty else
            f"\n\nModels that leave ({len(left)}):\n\n" + block(left))
         + f"\n\nTime of a model: {facts['seconds'].mean() / 60:.1f} minutes on "
