@@ -45,6 +45,7 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/zoo_timm_list.py`, `dynamics/zoo_timm_tags.py` | Amendment A17: make the frozen list of the timm models (new lineages, ResNet-50 recipes, seen lineages) with the head check, the type, and the recipe tag of each model (local, once, in an environment with timm 1.0.31). |
 | `dynamics/analyze_j.py` | Amendment A17: freezes the choices that are fitted on the 100 models of amendment A16, and tests them on the timm models with no new fit (local). |
 | `dynamics/analyze_s.py` | Amendment A15: fits and freezes a rule on runs of several ID sets and a choice from the recipe alone, and tests them on new class sets with the class set as the unit (local). |
+| `dynamics/analyze_tabrule.py` | Learner swap for the selection rule: writes the tables of every fit of four earlier reads for another learner, and reads the predictions of that learner against the ridge rule (local). The learner runs in `csf_dynamics_tabpfn`. |
 | `dynamics/build_class_sets.py` | Amendment A14: draws the four new ID class sets (local, once) and builds their folders from the 100-class folder, with gate D (HPC). |
 | `dynamics/analyze_p.py` | Amendment A14: applies the frozen rule of amendment A12 part 1 to recipes drawn at random, on Imagenette and on new ID classes, with no new fit (local). |
 | `dynamics/analyze_z.py` | Amendment A12: freezes and tests the rule from the statistics of each score, part 1 with 10 classes and part 2 with 100 classes, on the far sets and on two secondary targets (local). |
@@ -694,6 +695,24 @@ python -m dynamics.zoo_timm_list freeze --results-file dyn_results/timm_meta/res
 
 ```bash
 uv run python -m dynamics.analyze_j freeze --results-root dyn_results
+```
+
+### Learner swap for the selection rule (no new run of a model)
+
+The plan is `../documentation/tabpfn_rule_check_2026-11-27.md`. Another learner takes the place of the ridge regression of the rule, with the same inputs, target, and fit rows. The check uses four reads that the ridge rule already has: A17 on the new lineages (the primary one), A16 with each lineage left out, A17 with each new lineage left out of a fit on the others, and A15. This repository has no code of the learner.
+
+**1. Tables, local.** The script writes `dynamics/outputs/rule_tables.npz` and prints a content hash. It stops if the ridge regression from the tables does not give the stored choice of the ridge rule for every test model (the path gate):
+
+```bash
+uv run python -m dynamics.analyze_tabrule export --results-root dyn_results
+```
+
+**2. Fit, on the HPC,** in the repository `csf_dynamics_tabpfn` and its image. Copy the tables file there, run `python -m dynamics.fit_tables` (see the README of that repository), and copy `rule_predictions.npz` back.
+
+**3. Read, local.** The report goes to `dynamics/outputs/tabrule_report.md`. The script refuses predictions that come from other tables:
+
+```bash
+uv run python -m dynamics.analyze_tabrule report --results-root dyn_results --predictions rule_predictions.npz
 ```
 
 ### Stage H: 100 classes
