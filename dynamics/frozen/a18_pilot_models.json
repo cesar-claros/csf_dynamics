@@ -1,0 +1,1090 @@
+{
+ "amendment": "A18, part 1",
+ "seed": 18,
+ "pilot": [
+  "convnext_tiny-v1",
+  "mobilevitv2_075.cvnets_in1k"
+ ],
+ "models": [
+  {
+   "id": "convnext_tiny-v1",
+   "model": "convnext_tiny",
+   "weights": "IMAGENET1K_V1",
+   "family": "convnext",
+   "lineage": "convnext",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.52,
+   "acc5": 96.146,
+   "params": 28589128,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    236
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#convnext",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "densenet161-v1",
+   "model": "densenet161",
+   "weights": "IMAGENET1K_V1",
+   "family": "densenet",
+   "lineage": "densenet",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 77.138,
+   "acc5": 93.56,
+   "params": 28681000,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/116",
+   "docs": "These weights are ported from LuaTorch.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "efficientnet_b1-v2",
+   "model": "efficientnet_b1",
+   "weights": "IMAGENET1K_V2",
+   "family": "efficientnet",
+   "lineage": "efficientnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 79.838,
+   "acc5": 94.934,
+   "params": 7794184,
+   "crop_size": [
+    240
+   ],
+   "resize_size": [
+    255
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe-with-lr-wd-crop-tuning",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "inception_v3-v1",
+   "model": "inception_v3",
+   "weights": "IMAGENET1K_V1",
+   "family": "inception_v3",
+   "lineage": "inception_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 77.294,
+   "acc5": 93.45,
+   "params": 27161264,
+   "crop_size": [
+    299
+   ],
+   "resize_size": [
+    342
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#inception-v3",
+   "docs": "These weights are ported from the original paper.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "maxvit_t-v1",
+   "model": "maxvit_t",
+   "weights": "IMAGENET1K_V1",
+   "family": "maxvit",
+   "lineage": "maxvit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 83.7,
+   "acc5": 96.722,
+   "params": 30919624,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    224
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#maxvit",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe. They were trained with a BatchNorm2D momentum of 0.99 instead of the more correct 0.01.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "shufflenet_v2_x1_5-v1",
+   "model": "shufflenet_v2_x1_5",
+   "weights": "IMAGENET1K_V1",
+   "family": "shufflenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 72.996,
+   "acc5": 91.086,
+   "params": 3503624,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/pull/5906",
+   "docs": "These weights were trained from scratch by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_x_3_2gf-v2",
+   "model": "regnet_x_3_2gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.196,
+   "acc5": 95.43,
+   "params": 15296552,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "resnet50-v1",
+   "model": "resnet50",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 76.13,
+   "acc5": 92.862,
+   "params": 25557032,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnet",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "swin_b-v1",
+   "model": "swin_b",
+   "weights": "IMAGENET1K_V1",
+   "family": "swin",
+   "lineage": "swin",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 83.582,
+   "acc5": 96.64,
+   "params": 87768224,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    238
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#swintransformer",
+   "docs": "These weights reproduce closely the results of the paper using a similar training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "vgg19_bn-v1",
+   "model": "vgg19_bn",
+   "weights": "IMAGENET1K_V1",
+   "family": "vgg",
+   "lineage": "vgg_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 74.218,
+   "acc5": 91.842,
+   "params": 143678248,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#alexnet-and-vgg",
+   "docs": "These weights were trained from scratch by using a simplified training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "vit_l_32-v1",
+   "model": "vit_l_32",
+   "weights": "IMAGENET1K_V1",
+   "family": "vit",
+   "lineage": "vit",
+   "arch_type": "transformer",
+   "recipe_tag": "yes",
+   "acc1": 76.972,
+   "acc5": 93.07,
+   "params": 306535400,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_32",
+   "docs": "These weights were trained from scratch by using a modified version of `DeIT <https://arxiv.org/abs/2012.12877>`_'s training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "resnet101-v2",
+   "model": "resnet101",
+   "weights": "IMAGENET1K_V2",
+   "family": "resnet",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 81.886,
+   "acc5": 95.78,
+   "params": 44549160,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_x_32gf-v1",
+   "model": "regnet_x_32gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_x",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.622,
+   "acc5": 95.248,
+   "params": 107811560,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#large-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "resnext101_32x8d-v1",
+   "model": "resnext101_32x8d",
+   "weights": "IMAGENET1K_V1",
+   "family": "resnext",
+   "lineage": "resnet_kind",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 79.312,
+   "acc5": 94.526,
+   "params": 88791336,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#resnext",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_y_16gf-v1",
+   "model": "regnet_y_16gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 80.424,
+   "acc5": 95.24,
+   "params": 83590140,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#large-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_y_400mf-v1",
+   "model": "regnet_y_400mf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 74.046,
+   "acc5": 91.716,
+   "params": 4344144,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#small-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_y_8gf-v2",
+   "model": "regnet_y_8gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 82.828,
+   "acc5": 96.33,
+   "params": 39381472,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_y_3_2gf-v1",
+   "model": "regnet_y_3_2gf",
+   "weights": "IMAGENET1K_V1",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "no",
+   "acc1": 78.948,
+   "acc5": 94.576,
+   "params": 19436338,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#medium-models",
+   "docs": "These weights reproduce closely the results of the paper using a simple training recipe.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "shufflenet_v2_x1_0-v1",
+   "model": "shufflenet_v2_x1_0",
+   "weights": "IMAGENET1K_V1",
+   "family": "shufflenet_v2",
+   "lineage": "mobile",
+   "arch_type": "convolutional",
+   "recipe_tag": "ported",
+   "acc1": 69.362,
+   "acc5": 88.316,
+   "params": 2278604,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    256
+   ],
+   "recipe": "https://github.com/ericsun99/Shufflenet-v2-Pytorch",
+   "docs": "These weights were trained from scratch to reproduce closely the results of the paper.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "regnet_y_32gf-v2",
+   "model": "regnet_y_32gf",
+   "weights": "IMAGENET1K_V2",
+   "family": "regnet_y",
+   "lineage": "regnet",
+   "arch_type": "convolutional",
+   "recipe_tag": "yes",
+   "acc1": 83.368,
+   "acc5": 96.498,
+   "params": 145046770,
+   "crop_size": [
+    224
+   ],
+   "resize_size": [
+    232
+   ],
+   "recipe": "https://github.com/pytorch/vision/issues/3995#new-recipe",
+   "docs": "These weights improve upon the results of the original paper by using a modified version of TorchVision's `new training recipe <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.",
+   "pool": "torchvision"
+  },
+  {
+   "id": "mobilevitv2_075.cvnets_in1k",
+   "library": "timm",
+   "model": "mobilevitv2_075.cvnets_in1k",
+   "architecture": "mobilevitv2_075",
+   "tag": "cvnets_in1k",
+   "module": "mobilevit",
+   "family": "mobilevit",
+   "group": "N",
+   "lineage": "mobilevit",
+   "acc1": 75.612,
+   "acc5": 92.754,
+   "params_m": 2.87,
+   "crop_size": [
+    256
+   ],
+   "crop_pct": 0.888,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://arxiv.org/abs/2206.02680",
+   "recipe_evidence": "One recipe for the paper's models. Paper appendix: advanced augmentation (RandAugment, CutMix, MixUp, random erasing) for all width variants and cross-entropy with label smoothing; the cvnets config has mixup 0.2, cutmix 1.0, smoothing 0.1 and no teacher.",
+   "pool": "timm"
+  },
+  {
+   "id": "tiny_vit_5m_224.in1k",
+   "library": "timm",
+   "model": "tiny_vit_5m_224.in1k",
+   "architecture": "tiny_vit_5m_224",
+   "tag": "in1k",
+   "module": "tiny_vit",
+   "family": "tiny_vit",
+   "group": "N",
+   "lineage": "tiny_vit",
+   "acc1": 79.196,
+   "acc5": 94.792,
+   "params_m": 5.39,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.95,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/microsoft/Cream/tree/main/TinyViT",
+   "recipe_evidence": "README lists these as IN-1k models trained from scratch with the configs in configs/1k (21M is stated as without distillation). Config defaults: label smoothing 0.1, mixup 0.8, cutmix 1.0, distillation disabled. The distilled 22k weights have other tags (dist_in22k).",
+   "pool": "timm"
+  },
+  {
+   "id": "xception71.tf_in1k",
+   "library": "timm",
+   "model": "xception71.tf_in1k",
+   "architecture": "xception71",
+   "tag": "tf_in1k",
+   "module": "xception_aligned",
+   "family": "xception_aligned",
+   "group": "N",
+   "lineage": "xception_aligned",
+   "acc1": 79.92,
+   "acc5": 94.908,
+   "params_m": 42.34,
+   "crop_size": [
+    299
+   ],
+   "crop_pct": 0.903,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "unknown",
+   "recipe_fields": {
+    "label_smoothing": "unknown",
+    "mixup": "unknown",
+    "cutmix": "no"
+   },
+   "recipe_source": "https://arxiv.org/abs/1802.02611",
+   "recipe_evidence": "DeepLabv3+ paper: the Xception backbone is pretrained on ImageNet-1k with a protocol similar to the Xception paper (Nesterov momentum, learning rate 0.05, asynchronous training on 50 GPUs); smoothing and augmentation are not stated, and the DeepLab model zoo gives no recipe. The checkpoints date from 2018, before CutMix.",
+   "pool": "timm"
+  },
+  {
+   "id": "starnet_s1.in1k",
+   "library": "timm",
+   "model": "starnet_s1.in1k",
+   "architecture": "starnet_s1",
+   "tag": "in1k",
+   "module": "starnet",
+   "family": "starnet",
+   "group": "N",
+   "lineage": "starnet",
+   "acc1": 73.532,
+   "acc5": 91.504,
+   "params_m": 2.87,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.875,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://arxiv.org/abs/2403.19967",
+   "recipe_evidence": "One recipe for the paper's models. Paper Table 12: label smoothing 0.1, mixup 0.8, cutmix 0.2, weak RandAugment, no EMA. The paper says distillation could raise accuracy but does not use it.",
+   "pool": "timm"
+  },
+  {
+   "id": "convmixer_1024_20_ks9_p14.in1k",
+   "library": "timm",
+   "model": "convmixer_1024_20_ks9_p14.in1k",
+   "architecture": "convmixer_1024_20_ks9_p14",
+   "tag": "in1k",
+   "module": "convmixer",
+   "family": "convmixer",
+   "group": "N",
+   "lineage": "convmixer",
+   "acc1": 76.944,
+   "acc5": 93.364,
+   "params_m": 24.38,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.96,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/locuslab/convmixer",
+   "recipe_evidence": "One recipe for the paper's models. README timm command: mixup 0.5, cutmix 0.5, RandAugment, random erasing; it has no smoothing flag, so the timm default 0.1 applies (label smoothing by default, not by an explicit flag). 768/32 used the same settings for 300 epochs. Paper: no pretraining or extra data.",
+   "pool": "timm"
+  },
+  {
+   "id": "pit_b_224.in1k",
+   "library": "timm",
+   "model": "pit_b_224.in1k",
+   "architecture": "pit_b_224",
+   "tag": "in1k",
+   "module": "pit",
+   "family": "pit",
+   "group": "N",
+   "lineage": "pit",
+   "acc1": 82.458,
+   "acc5": 95.704,
+   "params_m": 73.76,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.9,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/naver-ai/pit",
+   "recipe_evidence": "One recipe for the paper's models. README: pit_b 82.0 and pit_ti 73.0 are the DeiT-setting results; distilled weights are separate files. The paper used the official DeiT code for that setting, whose defaults are smoothing 0.1, mixup 0.8, cutmix 1.0.",
+   "pool": "timm"
+  },
+  {
+   "id": "tnt_b_patch16_224.in1k",
+   "library": "timm",
+   "model": "tnt_b_patch16_224.in1k",
+   "architecture": "tnt_b_patch16_224",
+   "tag": "in1k",
+   "module": "tnt",
+   "family": "tnt",
+   "group": "N",
+   "lineage": "tnt",
+   "acc1": 82.864,
+   "acc5": 96.23,
+   "params_m": 65.43,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.9,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://arxiv.org/abs/2103.00112",
+   "recipe_evidence": "One recipe for the paper's models. Paper: DeiT training strategy with label smoothing, RandAugment, Mixup, CutMix, random erasing and repeated augmentation on ImageNet-1k.",
+   "pool": "timm"
+  },
+  {
+   "id": "rexnet_300.nav_in1k",
+   "library": "timm",
+   "model": "rexnet_300.nav_in1k",
+   "architecture": "rexnet_300",
+   "tag": "nav_in1k",
+   "module": "rexnet",
+   "family": "rexnet",
+   "group": "N",
+   "lineage": "rexnet",
+   "acc1": 82.78,
+   "acc5": 96.23,
+   "params_m": 34.71,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.875,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "unknown",
+    "cutmix": "unknown"
+   },
+   "recipe_source": "https://github.com/clovaai/rexnet",
+   "recipe_evidence": "README: ReXNets were trained with timm. The command is given for the 1.0x model only (SGD, RandAugment, random erasing, dropout; no smoothing flag, so the timm default 0.1; no mixup or cutmix flag), and it adds that a bigger model may need drop path or MixUp. The exact flags for this width are not published, so label smoothing is by default and from the 1.0x command, and mixup and cutmix are unknown.",
+   "pool": "timm"
+  },
+  {
+   "id": "lambda_resnet50ts.a1h_in1k",
+   "library": "timm",
+   "model": "lambda_resnet50ts.a1h_in1k",
+   "architecture": "lambda_resnet50ts",
+   "tag": "a1h_in1k",
+   "module": "byoanet",
+   "family": "byoanet",
+   "group": "N",
+   "lineage": "byoanet",
+   "acc1": 81.184,
+   "acc5": 95.094,
+   "params_m": 21.54,
+   "crop_size": [
+    256
+   ],
+   "crop_pct": 0.95,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://huggingface.co/timm/lambda_resnet50ts.a1h_in1k",
+   "recipe_evidence": "Family-level. Card: trained in timm, based on RSB A1 with stronger dropout, stochastic depth and RandAugment (LAMB). A1 in RSB Table 2 has label smoothing 0.1, mixup 0.2, cutmix 1.0. The exact run config is not published.",
+   "pool": "timm"
+  },
+  {
+   "id": "edgenext_xx_small.in1k",
+   "library": "timm",
+   "model": "edgenext_xx_small.in1k",
+   "architecture": "edgenext_xx_small",
+   "tag": "in1k",
+   "module": "edgenext",
+   "family": "edgenext",
+   "group": "N",
+   "lineage": "edgenext",
+   "acc1": 71.886,
+   "acc5": 90.534,
+   "params_m": 1.33,
+   "crop_size": [
+    288
+   ],
+   "crop_pct": 1.0,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "no",
+    "cutmix": "no"
+   },
+   "recipe_source": "https://github.com/mmaaz60/EdgeNeXt",
+   "recipe_evidence": "Paper lists only random resized crop, flip, multi-scale sampler and EMA for these sizes (RandAugment for S only). Official main.py defaults: smoothing 0.1, mixup 0, cutmix 0 (label smoothing from the script default). These plain weights are not distilled; in EdgeNeXt only edgenext_small.usi_in1k and edgenext_base.usi_in1k use the USI distillation scheme, and edgenext_base.in21k_ft_in1k uses extra data.",
+   "pool": "timm"
+  },
+  {
+   "id": "nf_resnet50.ra2_in1k",
+   "library": "timm",
+   "model": "nf_resnet50.ra2_in1k",
+   "architecture": "nf_resnet50",
+   "tag": "ra2_in1k",
+   "module": "nfnet",
+   "family": "nfnet",
+   "group": "N",
+   "lineage": "nfnet",
+   "acc1": 80.658,
+   "acc5": 95.35,
+   "params_m": 25.56,
+   "crop_size": [
+    288
+   ],
+   "crop_pct": 0.94,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "no"
+   },
+   "recipe_source": "https://gist.github.com/rwightman/37252f8d7d850a94e43f1fcb7b3b8322",
+   "recipe_evidence": "Family-level. The timm gist notes define ra2 as the ra3 scheme (RMSProp, mixup, random erasing, RandAugment) without CutMix; recorded RA2 configs use smoothing 0.1 and mixup 0.19; RSB procedure B agrees (label smoothing 0.1, mixup 0.2, no CutMix). The run config of this weight is not published.",
+   "pool": "timm"
+  },
+  {
+   "id": "nasnetalarge.tf_in1k",
+   "library": "timm",
+   "model": "nasnetalarge.tf_in1k",
+   "architecture": "nasnetalarge",
+   "tag": "tf_in1k",
+   "module": "nasnet",
+   "family": "nasnet",
+   "group": "N",
+   "lineage": "nasnet",
+   "acc1": 82.638,
+   "acc5": 96.066,
+   "params_m": 88.75,
+   "crop_size": [
+    331
+   ],
+   "crop_pct": 0.911,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "no",
+    "cutmix": "no"
+   },
+   "recipe_source": "https://github.com/tensorflow/models/blob/master/research/slim/nets/nasnet/nasnet.py",
+   "recipe_evidence": "TF-slim code notes for training the large ImageNet model list label smoothing 0.1 and an auxiliary head weighted 0.4, as in the paper; the slim README reports the paper's 82.7. The checkpoint is dated 2017-10-04, before mixup and CutMix were published.",
+   "pool": "timm"
+  },
+  {
+   "id": "shvit_s1.in1k",
+   "library": "timm",
+   "model": "shvit_s1.in1k",
+   "architecture": "shvit_s1",
+   "tag": "in1k",
+   "module": "shvit",
+   "family": "shvit",
+   "group": "N",
+   "lineage": "shvit",
+   "acc1": 72.78,
+   "acc5": 91.024,
+   "params_m": 6.33,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.875,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/ysj9909/SHViT",
+   "recipe_evidence": "One recipe for the paper's models. README commands use main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0, distillation type none. Released 72.8 (S1) and 77.4 (S3) are the non-distilled paper numbers; results with the DeiT distillation recipe are a separate table.",
+   "pool": "timm"
+  },
+  {
+   "id": "mambaout_kobe.in1k",
+   "library": "timm",
+   "model": "mambaout_kobe.in1k",
+   "architecture": "mambaout_kobe",
+   "tag": "in1k",
+   "module": "mambaout",
+   "family": "mambaout",
+   "group": "N",
+   "lineage": "mambaout",
+   "acc1": 81.064,
+   "acc5": 95.682,
+   "params_m": 9.14,
+   "crop_size": [
+    288
+   ],
+   "crop_pct": 1.0,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/yuweihao/MambaOut",
+   "recipe_evidence": "Paper recipe applied to a later release. The Kobe variant was added in the repository after the paper; it is trained with the same train.py, whose defaults are mixup 0.8, cutmix 1.0, smoothing 0.1 (as in the paper table). Variant-specific flags are not listed.",
+   "pool": "timm"
+  },
+  {
+   "id": "gcvit_base.in1k",
+   "library": "timm",
+   "model": "gcvit_base.in1k",
+   "architecture": "gcvit_base",
+   "tag": "in1k",
+   "module": "gcvit",
+   "family": "gcvit",
+   "group": "N",
+   "lineage": "gcvit",
+   "acc1": 84.456,
+   "acc5": 96.848,
+   "params_m": 90.32,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.875,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/NVlabs/GCVit",
+   "recipe_evidence": "One recipe for the paper's models. timm weights are remapped NVlabs checkpoints (no timm card on the Hub). Official train.py defaults: mixup 0.8, cutmix 1.0, smoothing 0.1; the model configs set cutmix 1.0 and do not override the rest. Paper: Swin-style training on ImageNet-1k without extra data.",
+   "pool": "timm"
+  },
+  {
+   "id": "nextvit_base.bd_in1k",
+   "library": "timm",
+   "model": "nextvit_base.bd_in1k",
+   "architecture": "nextvit_base",
+   "tag": "bd_in1k",
+   "module": "nextvit",
+   "family": "nextvit",
+   "group": "N",
+   "lineage": "nextvit",
+   "acc1": 83.498,
+   "acc5": 96.648,
+   "params_m": 44.82,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.95,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/bytedance/Next-ViT",
+   "recipe_evidence": "One recipe for the paper's models. README trains the ImageNet-1K models with main.py defaults: smoothing 0.1, mixup 0.8, cutmix 1.0; the script has no distillation option. The weights trained on the 6M-image set are separate files (tag bd_ssld_6m).",
+   "pool": "timm"
+  },
+  {
+   "id": "tresnet_m.miil_in1k",
+   "library": "timm",
+   "model": "tresnet_m.miil_in1k",
+   "architecture": "tresnet_m",
+   "tag": "miil_in1k",
+   "module": "tresnet",
+   "family": "tresnet",
+   "group": "N",
+   "lineage": "tresnet",
+   "acc1": 80.816,
+   "acc5": 94.862,
+   "params_m": 31.39,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.875,
+   "crop_mode": "center",
+   "interpolation": "bilinear",
+   "order": 0,
+   "arch_type": "convolutional",
+   "arch_type_code_test": "convolutional",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "no",
+    "cutmix": "no"
+   },
+   "recipe_source": "https://arxiv.org/abs/2003.13630",
+   "recipe_evidence": "One recipe for the paper's models. Paper basic training: 300 epochs, SGD with one-cycle, AutoAugment, Cutout, label smoothing and true weight decay; mixup and CutMix are not part of it. timm accuracies (80.8 and 81.5) equal the paper's ImageNet-1k results; the 21k-pretrained weight has another tag.",
+   "pool": "timm"
+  },
+  {
+   "id": "visformer_small.in1k",
+   "library": "timm",
+   "model": "visformer_small.in1k",
+   "architecture": "visformer_small",
+   "tag": "in1k",
+   "module": "visformer",
+   "family": "visformer",
+   "group": "N",
+   "lineage": "visformer",
+   "acc1": 82.092,
+   "acc5": 95.876,
+   "params_m": 40.22,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.9,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 1,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://github.com/danczs/Visformer/issues/2",
+   "recipe_evidence": "Community-trained weight. The contributor says it was trained with the provided official code on ImageNet-1k only; flags are not listed, and the official main.py defaults are smoothing 0.1, mixup 0.8, cutmix 1.0 (answers taken from the script defaults).",
+   "pool": "timm"
+  },
+  {
+   "id": "caformer_s36.sail_in1k",
+   "library": "timm",
+   "model": "caformer_s36.sail_in1k",
+   "architecture": "caformer_s36",
+   "tag": "sail_in1k",
+   "module": "metaformer",
+   "family": "metaformer",
+   "group": "N",
+   "lineage": "metaformer",
+   "acc1": 84.528,
+   "acc5": 97.01,
+   "params_m": 39.3,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 1.0,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://arxiv.org/abs/2210.13452",
+   "recipe_evidence": "Paper Table 14 (ConvFormer and CAFormer on ImageNet-1K): mixup 0.8, cutmix 1.0, label smoothing 0.1; normal supervised training without external data or distillation.",
+   "pool": "timm"
+  },
+  {
+   "id": "mvitv2_small.fb_in1k",
+   "library": "timm",
+   "model": "mvitv2_small.fb_in1k",
+   "architecture": "mvitv2_small",
+   "tag": "fb_in1k",
+   "module": "mvitv2",
+   "family": "mvitv2",
+   "group": "N",
+   "lineage": "mvitv2",
+   "acc1": 83.772,
+   "acc5": 96.558,
+   "params_m": 34.87,
+   "crop_size": [
+    224
+   ],
+   "crop_pct": 0.9,
+   "crop_mode": "center",
+   "interpolation": "bicubic",
+   "order": 0,
+   "arch_type": "transformer",
+   "arch_type_code_test": "transformer",
+   "arch_type_note": "",
+   "recipe_tag": "yes",
+   "recipe_fields": {
+    "label_smoothing": "yes",
+    "mixup": "yes",
+    "cutmix": "yes"
+   },
+   "recipe_source": "https://arxiv.org/abs/2112.01526",
+   "recipe_evidence": "One recipe for the paper's models. Paper: label smoothing 0.1, mixup, cutmix, random erasing and RandAugment; 300 epochs without external data or distillation models.",
+   "pool": "timm"
+  }
+ ]
+}

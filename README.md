@@ -44,6 +44,9 @@ The protocol, with the gates and the decision rule, is in `../documentation/imag
 | `dynamics/analyze_i.py` | Amendment A16: the gates and the read with each architecture lineage left out (local). |
 | `dynamics/zoo_timm_list.py`, `dynamics/zoo_timm_tags.py` | Amendment A17: make the frozen list of the timm models (new lineages, ResNet-50 recipes, seen lineages) with the head check, the type, and the recipe tag of each model (local, once, in an environment with timm 1.0.31). |
 | `dynamics/analyze_j.py` | Amendment A17: freezes the choices that are fitted on the 100 models of amendment A16, and tests them on the timm models with no new fit (local). |
+| `dynamics/standin.py`, `dynamics/standin_list.py` | Amendment A18, part 1: 15 candidate stand-in tasks made from ID validation images (finer patch grids, phase scrambling, pasted rectangles, and others), and the frozen list of the 40 models of the pilot. |
+| `dynamics/zoo_pilot.py` | Amendment A18, part 1: evaluates the existing and the candidate stand-in tasks on the 40 models. No OOD set is run (HPC). |
+| `dynamics/analyze_k.py` | Amendment A18, part 1: the readings of the pilot, which need no fit, and the fixed rule that accepts at most two new tasks (local). |
 | `dynamics/analyze_s.py` | Amendment A15: fits and freezes a rule on runs of several ID sets and a choice from the recipe alone, and tests them on new class sets with the class set as the unit (local). |
 | `dynamics/analyze_tabrule.py` | Learner swap for the selection rule: writes the tables of every fit of four earlier reads for another learner, and reads the predictions of that learner against the ridge rule (local). The learner runs in `csf_dynamics_tabpfn`. |
 | `dynamics/build_class_sets.py` | Amendment A14: draws the four new ID class sets (local, once) and builds their folders from the 100-class folder, with gate D (HPC). |
@@ -713,6 +716,36 @@ uv run python -m dynamics.analyze_tabrule export --results-root dyn_results
 
 ```bash
 uv run python -m dynamics.analyze_tabrule report --results-root dyn_results --predictions rule_predictions.npz
+```
+
+### Amendment A18, part 1: pilot of new stand-in tasks (40 public models, no training)
+
+The plan is `../documentation/standin_tasks_pilot_plan_2026-11-27.md`. The models are the 40 entries of `dynamics/frozen/a18_pilot_models.json`: 20 torchvision models of amendment A16 and 20 timm models of amendment A17. For each model the run computes the three existing stand-in tasks again and 15 candidate tasks. No OOD set is run: the targets come from the stored result files of the same models.
+
+- **The images are those of amendment A16** (`$IMAGENET1K_DIR`), and the weights are in the caches of the earlier runs (`TORCH_HOME`, `HF_HOME`).
+- **Mixed precision stays on,** as in the stored results of these models.
+- **The result files go to `$DYN_ROOT/standin_pilot`.** A model with a result file is skipped.
+
+**1. Two models first** (one of each library), to see the time and the log:
+
+```bash
+nohup python -m dynamics.zoo_pilot --models pilot --imagenet-dir $IMAGENET1K_DIR --out-root $DYN_ROOT > dyn_k_first.log 2>&1 &
+```
+
+**2. All 40 models.** The two models of step 1 are not repeated:
+
+```bash
+nohup python -m dynamics.zoo_pilot --models all --imagenet-dir $IMAGENET1K_DIR --out-root $DYN_ROOT > dyn_k.log 2>&1 &
+```
+
+```bash
+cd "$DYN_ROOT" && tar czf dyn_standin_pilot.tgz standin_pilot
+```
+
+**3. The readings, local.** After `tar xzf dyn_standin_pilot.tgz -C dyn_results`. The stored result files of the 40 models must be in `dyn_results/zoo` and `dyn_results/zoo_timm`:
+
+```bash
+uv run python -m dynamics.analyze_k --results-root dyn_results
 ```
 
 ### Stage H: 100 classes
